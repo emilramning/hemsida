@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Red Button Game</title>
+  <title>Red Button Game+</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -18,18 +18,11 @@
       overflow: hidden;
     }
 
-    #count {
-      font-size: 28px;
-      margin-bottom: 20px;
-    }
+    #count { font-size: 28px; margin-bottom: 10px; }
+    #timer { font-size: 18px; margin-bottom: 10px; color: #aaa; }
+    #message { height: 24px; margin-bottom: 15px; color: #ff4d4d; }
 
-    #message {
-      height: 24px;
-      margin-bottom: 15px;
-      color: #ff4d4d;
-    }
-
-    button {
+    button.main {
       width: 160px;
       height: 160px;
       border-radius: 50%;
@@ -43,15 +36,12 @@
       transition: transform 0.1s ease, box-shadow 0.1s ease;
     }
 
-    button:active {
+    button.main:active {
       transform: scale(0.9);
       box-shadow: 0 0 60px rgba(255,0,0,1);
     }
 
-    .shake {
-      animation: shake 0.3s;
-    }
-
+    .shake { animation: shake 0.3s; }
     @keyframes shake {
       0% { transform: translateX(0); }
       25% { transform: translateX(-5px); }
@@ -64,20 +54,21 @@
       position: absolute;
       width: 8px;
       height: 8px;
-      background: red;
       top: 0;
       animation: fall 2s linear forwards;
     }
 
     @keyframes fall {
-      to {
-        transform: translateY(100vh) rotate(360deg);
-        opacity: 0;
-      }
+      to { transform: translateY(100vh) rotate(360deg); opacity: 0; }
     }
 
-    #reset {
-      margin-top: 25px;
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .controls button {
       background: transparent;
       border: 1px solid #555;
       color: #aaa;
@@ -90,23 +81,37 @@
 <body>
 
   <div id="count">Clicks: 0</div>
+  <div id="timer">Timer: ready</div>
   <div id="message"></div>
-  <button id="btn">CLICK</button>
-  <button id="reset">Reset</button>
+
+  <button id="btn" class="main">CLICK</button>
+
+  <div class="controls">
+    <button id="reset">Reset</button>
+    <button id="sound">Sound: ON</button>
+  </div>
 
   <script>
     let clicks = Number(localStorage.getItem("clicks")) || 0;
+    let soundOn = true;
+    let timeLeft = 0;
+    let timerRunning = false;
+
     const countEl = document.getElementById("count");
     const btn = document.getElementById("btn");
     const msg = document.getElementById("message");
     const resetBtn = document.getElementById("reset");
+    const soundBtn = document.getElementById("sound");
+    const timerEl = document.getElementById("timer");
+
+    const clickSound = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
 
     const messages = [
       "Nice 😎",
       "Keep going 🔥",
       "Faster! ⚡",
       "You're cracked 🤯",
-      "Button abuse detected 👀"
+      "Button abuse 👀"
     ];
 
     function update() {
@@ -119,18 +124,38 @@
         const c = document.createElement("div");
         c.className = "confetti";
         c.style.left = Math.random() * 100 + "vw";
-        c.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        c.style.background = `hsl(${Math.random() * 360},100%,50%)`;
         c.style.animationDuration = 1 + Math.random() * 1.5 + "s";
         document.body.appendChild(c);
         setTimeout(() => c.remove(), 2000);
       }
     }
 
+    function startTimer() {
+      timerRunning = true;
+      timeLeft = 10;
+      timerEl.textContent = "Time left: 10s";
+
+      const interval = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = "Time left: " + timeLeft + "s";
+        if (timeLeft <= 0) {
+          clearInterval(interval);
+          timerRunning = false;
+          msg.textContent = "⏱️ Time's up!";
+        }
+      }, 1000);
+    }
+
     update();
 
     btn.addEventListener("click", () => {
+      if (!timerRunning) startTimer();
+
       clicks++;
       update();
+
+      if (soundOn) clickSound.cloneNode().play();
 
       btn.classList.add("shake");
       setTimeout(() => btn.classList.remove("shake"), 300);
@@ -147,6 +172,13 @@
       clicks = 0;
       update();
       msg.textContent = "Reset 😌";
+      timerEl.textContent = "Timer: ready";
+      timerRunning = false;
+    });
+
+    soundBtn.addEventListener("click", () => {
+      soundOn = !soundOn;
+      soundBtn.textContent = "Sound: " + (soundOn ? "ON" : "OFF");
     });
   </script>
 
