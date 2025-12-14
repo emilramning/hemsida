@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Red Button</title>
+  <title>Red Button Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -12,14 +12,21 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: #111;
+      background: radial-gradient(circle at top, #222, #000);
       color: white;
       font-family: Arial, sans-serif;
+      overflow: hidden;
     }
 
     #count {
       font-size: 28px;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
+    }
+
+    #message {
+      height: 24px;
+      margin-bottom: 15px;
+      color: #ff4d4d;
     }
 
     button {
@@ -33,29 +40,113 @@
       font-weight: bold;
       cursor: pointer;
       box-shadow: 0 0 35px rgba(255,0,0,0.7);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
     }
 
     button:active {
-      transform: scale(0.95);
+      transform: scale(0.9);
+      box-shadow: 0 0 60px rgba(255,0,0,1);
+    }
+
+    .shake {
+      animation: shake 0.3s;
+    }
+
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
+    }
+
+    .confetti {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: red;
+      top: 0;
+      animation: fall 2s linear forwards;
+    }
+
+    @keyframes fall {
+      to {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    #reset {
+      margin-top: 25px;
+      background: transparent;
+      border: 1px solid #555;
+      color: #aaa;
+      padding: 6px 14px;
+      cursor: pointer;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
 
   <div id="count">Clicks: 0</div>
+  <div id="message"></div>
   <button id="btn">CLICK</button>
+  <button id="reset">Reset</button>
 
   <script>
     let clicks = Number(localStorage.getItem("clicks")) || 0;
     const countEl = document.getElementById("count");
     const btn = document.getElementById("btn");
+    const msg = document.getElementById("message");
+    const resetBtn = document.getElementById("reset");
 
-    countEl.textContent = "Clicks: " + clicks;
+    const messages = [
+      "Nice 😎",
+      "Keep going 🔥",
+      "Faster! ⚡",
+      "You're cracked 🤯",
+      "Button abuse detected 👀"
+    ];
+
+    function update() {
+      countEl.textContent = "Clicks: " + clicks;
+      localStorage.setItem("clicks", clicks);
+    }
+
+    function confettiBoom() {
+      for (let i = 0; i < 25; i++) {
+        const c = document.createElement("div");
+        c.className = "confetti";
+        c.style.left = Math.random() * 100 + "vw";
+        c.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        c.style.animationDuration = 1 + Math.random() * 1.5 + "s";
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 2000);
+      }
+    }
+
+    update();
 
     btn.addEventListener("click", () => {
       clicks++;
-      localStorage.setItem("clicks", clicks);
-      countEl.textContent = "Clicks: " + clicks;
+      update();
+
+      btn.classList.add("shake");
+      setTimeout(() => btn.classList.remove("shake"), 300);
+
+      msg.textContent = messages[Math.floor(Math.random() * messages.length)];
+
+      if (clicks % 10 === 0) {
+        confettiBoom();
+        msg.textContent = "🎉 " + clicks + " clicks!";
+      }
+    });
+
+    resetBtn.addEventListener("click", () => {
+      clicks = 0;
+      update();
+      msg.textContent = "Reset 😌";
     });
   </script>
 
