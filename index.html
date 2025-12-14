@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Global Red Button</title>
+  <meta charset="UTF-8">
+  <title>Red Button</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       margin: 0;
@@ -12,19 +12,14 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      font-family: Arial, sans-serif;
       background: #111;
       color: white;
+      font-family: Arial, sans-serif;
     }
 
-    #globalCount {
-      font-size: 26px;
+    #count {
+      font-size: 28px;
       margin-bottom: 25px;
-    }
-
-    #localCount {
-      font-size: 18px;
-      margin-top: 25px;
     }
 
     button {
@@ -33,11 +28,11 @@
       border-radius: 50%;
       border: none;
       background: red;
-      cursor: pointer;
-      font-size: 20px;
-      font-weight: bold;
       color: white;
-      box-shadow: 0 0 35px rgba(255, 0, 0, 0.7);
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 35px rgba(255,0,0,0.7);
     }
 
     button:active {
@@ -47,66 +42,22 @@
 </head>
 <body>
 
-  <div id="globalCount">Total clicks worldwide: 0</div>
+  <div id="count">Clicks: 0</div>
+  <button id="btn">CLICK</button>
 
-  <button id="clickBtn">CLICK</button>
+  <script>
+    let clicks = Number(localStorage.getItem("clicks")) || 0;
+    const countEl = document.getElementById("count");
+    const btn = document.getElementById("btn");
 
-  <div id="localCount">Your clicks: 0</div>
+    countEl.textContent = "Clicks: " + clicks;
 
-  <!-- Firebase (working & simplified) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    // ✅ REPLACE with your own Firebase config
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      projectId: "YOUR_PROJECT_ID",
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // Reference to global counter
-    const counterRef = doc(db, "stats", "global");
-
-    // Create document if it does not exist
-    const snapshot = await getDoc(counterRef);
-    if (!snapshot.exists()) {
-      await setDoc(counterRef, { clicks: 0 });
-    }
-
-    // Local clicks (saved in browser)
-    let localClicks = Number(localStorage.getItem("localClicks")) || 0;
-    document.getElementById("localCount").innerText = `Your clicks: ${localClicks}`;
-
-    // Listen for global clicks in real time
-    onSnapshot(counterRef, (docSnap) => {
-      document.getElementById("globalCount").innerText =
-        "Total clicks worldwide: " + docSnap.data().clicks;
-    });
-
-    // Button click
-    document.getElementById("clickBtn").addEventListener("click", async () => {
-      try {
-        await updateDoc(counterRef, { clicks: increment(1) });
-        localClicks++;
-        localStorage.setItem("localClicks", localClicks);
-        document.getElementById("localCount").innerText = `Your clicks: ${localClicks}`;
-      } catch (error) {
-        console.error("Click failed:", error);
-        alert("Firebase is not configured correctly.");
-      }
+    btn.addEventListener("click", () => {
+      clicks++;
+      localStorage.setItem("clicks", clicks);
+      countEl.textContent = "Clicks: " + clicks;
     });
   </script>
 
 </body>
 </html>
-
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-};
