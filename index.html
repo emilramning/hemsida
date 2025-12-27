@@ -21,7 +21,7 @@
 
   #terminal {
     position: fixed;
-    bottom: 0;
+    bottom: 40px;
     width: 100%;
     max-height: 40vh;
     padding: 15px;
@@ -31,14 +31,22 @@
     border-top: 1px solid #00ff00;
   }
 
-  .line {
-    margin-bottom: 6px;
-    animation: fadeIn 0.3s ease;
+  #commandInput {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    padding: 10px;
+    background: black;
+    color: #00ff00;
+    border: none;
+    border-top: 1px solid #00ff00;
+    font-family: monospace;
+    outline: none;
+    box-sizing: border-box;
   }
 
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  .line {
+    margin-bottom: 6px;
   }
 </style>
 </head>
@@ -46,24 +54,24 @@
 
 <canvas id="matrix"></canvas>
 <div id="terminal"></div>
-<input id="commandInput" placeholder="type a command and press Enter" style="position:fixed;bottom:0;left:0;width:100%;padding:10px;background:black;color:#00ff00;border:none;border-top:1px solid #00ff00;font-family:monospace;box-sizing:border-box;outline:none;" />
+<input id="commandInput" placeholder="type a command and press Enter" />
 
 <script>
 // ===== MATRIX RAIN =====
 const canvas = document.getElementById('matrix');
 const ctx = canvas.getContext('2d');
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
 
 const letters = '01';
 const fontSize = 16;
-const columns = canvas.width / fontSize;
-const drops = [];
-
-for (let x = 0; x < columns; x++) {
-  drops[x] = Math.random() * canvas.height;
-}
+let columns = Math.floor(canvas.width / fontSize);
+let drops = new Array(columns).fill(1);
 
 function drawMatrix() {
   ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
@@ -85,44 +93,16 @@ function drawMatrix() {
 
 setInterval(drawMatrix, 50);
 
-// ===== FAKE TERMINAL TEXT =====
+// ===== TERMINAL INPUT =====
 const terminal = document.getElementById('terminal');
-
-const fakeLines = [
-  'Initializing secure connection...',
-  'Bypassing firewall...',
-  'Decrypting data packets...',
-  'Access granted.',
-  'Process completed.'
-];
-
-let lineIndex = 0;
-
-function addLine() {
-  if (lineIndex >= fakeLines.length) {
-    lineIndex = 0;
-    terminal.innerHTML = '';
-  }
-
-  const div = document.createElement('div');
-  div.className = 'line';
-  div.textContent = '> ' + fakeLines[lineIndex];
-  terminal.appendChild(div);
-  terminal.scrollTop = terminal.scrollHeight;
-  lineIndex++;
-}
-
-// Auto text disabled – output only appears after user input
-
-// ===== USER INPUT =====
 const input = document.getElementById('commandInput');
 
 const responses = [
   'Command accepted.',
   'Executing...',
-  'Permission granted.',
-  'Access denied. Retrying...',
-  'Process injected successfully.'
+  'Access granted.',
+  'Decrypting data...',
+  'Process completed.'
 ];
 
 input.addEventListener('keydown', (e) => {
@@ -134,31 +114,12 @@ input.addEventListener('keydown', (e) => {
 
     const responseLine = document.createElement('div');
     responseLine.className = 'line';
-    responseLine.textContent = fakeLines[Math.floor(Math.random() * fakeLines.length)];
+    responseLine.textContent = responses[Math.floor(Math.random() * responses.length)];
     terminal.appendChild(responseLine);
 
     terminal.scrollTop = terminal.scrollHeight;
     input.value = '';
   }
-});
-    userLine.className = 'line';
-    userLine.textContent = '> ' + input.value;
-    terminal.appendChild(userLine);
-
-    const response = document.createElement('div');
-    response.className = 'line';
-    response.textContent = responses[Math.floor(Math.random() * responses.length)];
-    terminal.appendChild(response);
-
-    terminal.scrollTop = terminal.scrollHeight;
-    input.value = '';
-  }
-});
-
-// ===== RESIZE =====
-window.addEventListener('resize', () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
 });
 </script>
 
