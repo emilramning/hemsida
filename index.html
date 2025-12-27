@@ -90,14 +90,10 @@ const terminal = document.getElementById('terminal');
 
 const fakeLines = [
   'Initializing secure connection...',
-  'Bypassing firewall layer 1...',
-  'Accessing encrypted node...',
-  'Decrypting packets [##########] 100%',
-  'Uploading payload...',
-  'Verifying access token...',
-  'Connection established.',
-  'Downloading data stream...',
-  'Process completed successfully.'
+  'Bypassing firewall...',
+  'Decrypting data packets...',
+  'Access granted.',
+  'Process completed.'
 ];
 
 let lineIndex = 0;
@@ -116,7 +112,7 @@ function addLine() {
   lineIndex++;
 }
 
-setInterval(addLine, 900);
+// Auto text disabled – output only appears after user input
 
 // ===== USER INPUT =====
 const input = document.getElementById('commandInput');
@@ -132,6 +128,19 @@ const responses = [
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && input.value.trim() !== '') {
     const userLine = document.createElement('div');
+    userLine.className = 'line';
+    userLine.textContent = '> ' + input.value;
+    terminal.appendChild(userLine);
+
+    const responseLine = document.createElement('div');
+    responseLine.className = 'line';
+    responseLine.textContent = fakeLines[Math.floor(Math.random() * fakeLines.length)];
+    terminal.appendChild(responseLine);
+
+    terminal.scrollTop = terminal.scrollHeight;
+    input.value = '';
+  }
+});
     userLine.className = 'line';
     userLine.textContent = '> ' + input.value;
     terminal.appendChild(userLine);
