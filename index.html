@@ -2,185 +2,139 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Red Button Game+</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meme Generator</title>
   <style>
     body {
       margin: 0;
-      height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
-      background: radial-gradient(circle at top, #222, #000);
-      color: white;
-      font-family: Arial, sans-serif;
-      overflow: hidden;
+      padding: 20px;
     }
 
-    #count { font-size: 28px; margin-bottom: 10px; }
-    #timer { font-size: 18px; margin-bottom: 10px; color: #aaa; }
-    #message { height: 24px; margin-bottom: 15px; color: #ff4d4d; }
+    h1 {
+      margin-bottom: 20px;
+    }
 
-    button.main {
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px;
+      border-radius: 5px;
       border: none;
+    }
+
+    button {
+      cursor: pointer;
       background: red;
       color: white;
-      font-size: 22px;
       font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 0 35px rgba(255,0,0,0.7);
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      transition: transform 0.1s ease;
     }
 
-    button.main:active {
-      transform: scale(0.9);
-      box-shadow: 0 0 60px rgba(255,0,0,1);
+    button:active {
+      transform: scale(0.95);
     }
 
-    .shake { animation: shake 0.3s; }
-    @keyframes shake {
-      0% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      50% { transform: translateX(5px); }
-      75% { transform: translateX(-5px); }
-      100% { transform: translateX(0); }
-    }
-
-    .confetti {
-      position: absolute;
-      width: 8px;
-      height: 8px;
-      top: 0;
-      animation: fall 2s linear forwards;
-    }
-
-    @keyframes fall {
-      to { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-    }
-
-    .controls {
-      margin-top: 20px;
+    #memeContainer {
+      margin-top: 30px;
       display: flex;
-      gap: 10px;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
     }
 
-    .controls button {
-      background: transparent;
-      border: 1px solid #555;
-      color: #aaa;
-      padding: 6px 14px;
-      cursor: pointer;
-      border-radius: 6px;
+    .meme {
+      position: relative;
+      max-width: 500px;
+      margin-bottom: 20px;
+      animation: fadeIn 0.8s ease;
     }
+
+    .meme img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .memeText {
+      position: absolute;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px black;
+      text-align: center;
+      animation: textPop 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes textPop {
+      from { transform: translateX(-50%) scale(0.8); }
+      to { transform: translateX(-50%) scale(1); }
+    }
+
   </style>
 </head>
 <body>
+  <h1>Meme Generator with Twist</h1>
+  <input type="text" id="memeText" placeholder="Enter your text..." />
+  <button id="generate">Generate Meme</button>
 
-  <div id="count">Clicks: 0</div>
-  <div id="timer">Timer: ready</div>
-  <div id="message"></div>
-
-  <button id="btn" class="main">CLICK</button>
-
-  <div class="controls">
-    <button id="reset">Reset</button>
-    <button id="sound">Sound: ON</button>
-  </div>
+  <div id="memeContainer"></div>
 
   <script>
-    let clicks = Number(localStorage.getItem("clicks")) || 0;
-    let soundOn = true;
-    let timeLeft = 0;
-    let timerRunning = false;
+    const memeContainer = document.getElementById('memeContainer');
+    const memeTextInput = document.getElementById('memeText');
+    const generateBtn = document.getElementById('generate');
 
-    const countEl = document.getElementById("count");
-    const btn = document.getElementById("btn");
-    const msg = document.getElementById("message");
-    const resetBtn = document.getElementById("reset");
-    const soundBtn = document.getElementById("sound");
-    const timerEl = document.getElementById("timer");
-
-    const clickSound = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
-
-    const messages = [
-      "Nice 😎",
-      "Keep going 🔥",
-      "Faster! ⚡",
-      "You're cracked 🤯",
-      "Button abuse 👀"
+    // Example meme images (can add more URLs)
+    const memeImages = [
+      'https://i.imgflip.com/30b1gx.jpg',
+      'https://i.imgflip.com/26am.jpg',
+      'https://i.imgflip.com/1otk96.jpg',
+      'https://i.imgflip.com/9ehk.jpg',
+      'https://i.imgflip.com/3si4.jpg'
     ];
 
-    function update() {
-      countEl.textContent = "Clicks: " + clicks;
-      localStorage.setItem("clicks", clicks);
+    function generateMeme() {
+      const text = memeTextInput.value.trim();
+      if (!text) return;
+
+      const imgUrl = memeImages[Math.floor(Math.random() * memeImages.length)];
+
+      const memeDiv = document.createElement('div');
+      memeDiv.className = 'meme';
+
+      const img = document.createElement('img');
+      img.src = imgUrl;
+
+      const textDiv = document.createElement('div');
+      textDiv.className = 'memeText';
+      textDiv.textContent = text;
+
+      memeDiv.appendChild(img);
+      memeDiv.appendChild(textDiv);
+      memeContainer.prepend(memeDiv);
+
+      memeTextInput.value = '';
     }
 
-    function confettiBoom() {
-      for (let i = 0; i < 25; i++) {
-        const c = document.createElement("div");
-        c.className = "confetti";
-        c.style.left = Math.random() * 100 + "vw";
-        c.style.background = `hsl(${Math.random() * 360},100%,50%)`;
-        c.style.animationDuration = 1 + Math.random() * 1.5 + "s";
-        document.body.appendChild(c);
-        setTimeout(() => c.remove(), 2000);
-      }
-    }
+    generateBtn.addEventListener('click', generateMeme);
 
-    function startTimer() {
-      timerRunning = true;
-      timeLeft = 10;
-      timerEl.textContent = "Time left: 10s";
-
-      const interval = setInterval(() => {
-        timeLeft--;
-        timerEl.textContent = "Time left: " + timeLeft + "s";
-        if (timeLeft <= 0) {
-          clearInterval(interval);
-          timerRunning = false;
-          msg.textContent = "⏱️ Time's up!";
-        }
-      }, 1000);
-    }
-
-    update();
-
-    btn.addEventListener("click", () => {
-      if (!timerRunning) startTimer();
-
-      clicks++;
-      update();
-
-      if (soundOn) clickSound.cloneNode().play();
-
-      btn.classList.add("shake");
-      setTimeout(() => btn.classList.remove("shake"), 300);
-
-      msg.textContent = messages[Math.floor(Math.random() * messages.length)];
-
-      if (clicks % 10 === 0) {
-        confettiBoom();
-        msg.textContent = "🎉 " + clicks + " clicks!";
-      }
-    });
-
-    resetBtn.addEventListener("click", () => {
-      clicks = 0;
-      update();
-      msg.textContent = "Reset 😌";
-      timerEl.textContent = "Timer: ready";
-      timerRunning = false;
-    });
-
-    soundBtn.addEventListener("click", () => {
-      soundOn = !soundOn;
-      soundBtn.textContent = "Sound: " + (soundOn ? "ON" : "OFF");
+    // Optional: generate meme on Enter key
+    memeTextInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') generateMeme();
     });
   </script>
-
 </body>
 </html>
