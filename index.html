@@ -13,13 +13,13 @@
   .alert { color:#ff3333; }
 
   /* Screen effects */
-  .flash { animation: flash 0.2s linear 3; }
-  @keyframes flash { 0%{background:black;} 50%{background:#220000;} 100%{background:black;} }
+  .flash { animation: flash 1.5s linear 1; }
+  @keyframes flash { 0%{background:black;} 20%{background:#220000;} 40%{background:black;} 60%{background:#220000;} 80%{background:black;} 100%{background:black;} } 50%{background:#220000;} 100%{background:black;} }
 
-  .shake { animation: shake 0.4s; }
-  @keyframes shake { 0%{transform:translate(0,0);} 25%{transform:translate(-5px,3px);} 50%{transform:translate(5px,-3px);} 75%{transform:translate(-4px,2px);} 100%{transform:translate(0,0);} }
+  .shake { animation: shake 1.2s; }
+  @keyframes shake { 0%{transform:translate(0,0);} 10%{transform:translate(-6px,4px);} 20%{transform:translate(6px,-4px);} 30%{transform:translate(-5px,3px);} 40%{transform:translate(5px,-3px);} 50%{transform:translate(-4px,2px);} 60%{transform:translate(4px,-2px);} 70%{transform:translate(-3px,2px);} 80%{transform:translate(3px,-2px);} 90%{transform:translate(-2px,1px);} 100%{transform:translate(0,0);} } 25%{transform:translate(-5px,3px);} 50%{transform:translate(5px,-3px);} 75%{transform:translate(-4px,2px);} 100%{transform:translate(0,0);} }
 
-  .glitch { filter: hue-rotate(60deg) contrast(1.5); }
+  .glitch { animation: glitch 1.4s; }
 </style>
 </head>
 <body>
@@ -48,9 +48,9 @@ const input=document.getElementById('commandInput');
 
 function print(text, cls=''){ const d=document.createElement('div'); d.className='line '+cls; d.textContent=text; terminal.appendChild(d); terminal.scrollTop=terminal.scrollHeight; }
 
-function flash(){ document.body.classList.add('flash'); setTimeout(()=>document.body.classList.remove('flash'),600); }
-function shake(){ document.body.classList.add('shake'); setTimeout(()=>document.body.classList.remove('shake'),500); }
-function glitch(){ document.body.classList.add('glitch'); setTimeout(()=>document.body.classList.remove('glitch'),600); }
+function flash(){ document.body.classList.add('flash'); setTimeout(()=>document.body.classList.remove('flash'),1600); }
+function shake(){ document.body.classList.add('shake'); setTimeout(()=>document.body.classList.remove('shake'),1300); }
+function glitch(){ document.body.classList.add('glitch'); setTimeout(()=>document.body.classList.remove('glitch'),1400); }
 
 function progress(doneText){ let p=0; const bar=document.createElement('div'); bar.className='line'; terminal.appendChild(bar);
   const t=setInterval(()=>{ p+=10; bar.textContent='['+'█'.repeat(p/10)+'░'.repeat(10-p/10)+'] '+p+'%'; terminal.scrollTop=terminal.scrollHeight;
@@ -58,7 +58,7 @@ function progress(doneText){ let p=0; const bar=document.createElement('div'); b
   },300);
 }
 
-function countdown(){ let n=5; print('SELF DESTRUCT IN:'); const t=setInterval(()=>{ print(String(n),'alert'); shake(); n--; if(n<0){ clearInterval(t); print('ABORTED','alert'); } },700); }
+function countdown(){ let n=7; print('SELF DESTRUCT SEQUENCE STARTED','alert'); const t=setInterval(()=>{ print('T-minus '+n,'alert'); shake(); n--; if(n<0){ clearInterval(t); flash(); print('SEQUENCE ABORTED','alert'); } },900); } },700); }
 
 input.addEventListener('keydown', e=>{
   if(e.key==='Enter' && input.value.trim()!==''){
