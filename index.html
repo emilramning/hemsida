@@ -46,6 +46,7 @@
 
 <canvas id="matrix"></canvas>
 <div id="terminal"></div>
+<input id="commandInput" placeholder="type a command and press Enter" style="position:fixed;bottom:0;left:0;width:100%;padding:10px;background:black;color:#00ff00;border:none;border-top:1px solid #00ff00;font-family:monospace;box-sizing:border-box;outline:none;" />
 
 <script>
 // ===== MATRIX RAIN =====
@@ -116,6 +117,34 @@ function addLine() {
 }
 
 setInterval(addLine, 900);
+
+// ===== USER INPUT =====
+const input = document.getElementById('commandInput');
+
+const responses = [
+  'Command accepted.',
+  'Executing...',
+  'Permission granted.',
+  'Access denied. Retrying...',
+  'Process injected successfully.'
+];
+
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && input.value.trim() !== '') {
+    const userLine = document.createElement('div');
+    userLine.className = 'line';
+    userLine.textContent = '> ' + input.value;
+    terminal.appendChild(userLine);
+
+    const response = document.createElement('div');
+    response.className = 'line';
+    response.textContent = responses[Math.floor(Math.random() * responses.length)];
+    terminal.appendChild(response);
+
+    terminal.scrollTop = terminal.scrollHeight;
+    input.value = '';
+  }
+});
 
 // ===== RESIZE =====
 window.addEventListener('resize', () => {
