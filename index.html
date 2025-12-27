@@ -11,7 +11,15 @@
   #commandInput { position:fixed; bottom:0; width:100%; padding:10px; background:black; color:#00ff00; border:none; border-top:1px solid #00ff00; font-family:monospace; outline:none; }
   .line { margin-bottom:6px; }
   .alert { color:#ff3333; }
-  .bar { margin:6px 0; }
+
+  /* Screen effects */
+  .flash { animation: flash 0.2s linear 3; }
+  @keyframes flash { 0%{background:black;} 50%{background:#220000;} 100%{background:black;} }
+
+  .shake { animation: shake 0.4s; }
+  @keyframes shake { 0%{transform:translate(0,0);} 25%{transform:translate(-5px,3px);} 50%{transform:translate(5px,-3px);} 75%{transform:translate(-4px,2px);} 100%{transform:translate(0,0);} }
+
+  .glitch { filter: hue-rotate(60deg) contrast(1.5); }
 </style>
 </head>
 <body>
@@ -40,41 +48,29 @@ const input=document.getElementById('commandInput');
 
 function print(text, cls=''){ const d=document.createElement('div'); d.className='line '+cls; d.textContent=text; terminal.appendChild(d); terminal.scrollTop=terminal.scrollHeight; }
 
-const helpText=[
-  'Available commands:',
-  'help, clear, root, inject, scan, selfdestruct'
-];
+function flash(){ document.body.classList.add('flash'); setTimeout(()=>document.body.classList.remove('flash'),600); }
+function shake(){ document.body.classList.add('shake'); setTimeout(()=>document.body.classList.remove('shake'),500); }
+function glitch(){ document.body.classList.add('glitch'); setTimeout(()=>document.body.classList.remove('glitch'),600); }
 
-const sequences=[
-  ['Command accepted.','Initializing modules...','Decrypting data...','Process completed.'],
-  ['Access granted.','Bypassing firewall...','Establishing secure tunnel...','Connection stable.'],
-  ['Executing...','Scanning nodes...','No threats detected.','Execution finished.']
-];
-
-function progressBar(doneText){
-  let p=0; const bar=document.createElement('div'); bar.className='line bar'; terminal.appendChild(bar);
-  const t=setInterval(()=>{
-    p+=10; const blocks=Math.floor(p/10);
-    bar.textContent='['+'█'.repeat(blocks)+'░'.repeat(10-blocks)+'] '+p+'%'; terminal.scrollTop=terminal.scrollHeight;
+function progress(doneText){ let p=0; const bar=document.createElement('div'); bar.className='line'; terminal.appendChild(bar);
+  const t=setInterval(()=>{ p+=10; bar.textContent='['+'█'.repeat(p/10)+'░'.repeat(10-p/10)+'] '+p+'%'; terminal.scrollTop=terminal.scrollHeight;
     if(p>=100){ clearInterval(t); print(doneText); }
   },300);
 }
 
-function alertFlash(){ print('WARNING: Unusual activity detected','alert'); }
+function countdown(){ let n=5; print('SELF DESTRUCT IN:'); const t=setInterval(()=>{ print(String(n),'alert'); shake(); n--; if(n<0){ clearInterval(t); print('ABORTED','alert'); } },700); }
 
 input.addEventListener('keydown', e=>{
   if(e.key==='Enter' && input.value.trim()!==''){
     const cmd=input.value.trim().toLowerCase(); input.value=''; print('> '+cmd);
 
-    if(cmd==='help'){ helpText.forEach(t=>print(t)); return; }
+    if(cmd==='help'){ print('Commands: help, clear, root, inject, selfdestruct'); return; }
     if(cmd==='clear'){ terminal.innerHTML=''; return; }
-    if(cmd==='root'){ print('ROOT ACCESS GRANTED'); alertFlash(); return; }
-    if(cmd==='inject'){ progressBar('Injection successful.'); return; }
-    if(cmd==='selfdestruct'){ print('Self destruct sequence initiated...'); progressBar('Sequence aborted.'); return; }
+    if(cmd==='root'){ print('ROOT ACCESS GRANTED'); flash(); glitch(); return; }
+    if(cmd==='inject'){ glitch(); progress('Injection successful.'); return; }
+    if(cmd==='selfdestruct'){ flash(); countdown(); return; }
 
-    const seq=sequences[Math.floor(Math.random()*sequences.length)];
-    seq.forEach((t,i)=> setTimeout(()=>print(t), 400*(i+1)));
-    if(Math.random()<0.25) setTimeout(alertFlash, 1200);
+    ['Executing...','Scanning...','Process complete.'].forEach((t,i)=>setTimeout(()=>print(t),400*(i+1)));
   }
 });
 </script>
