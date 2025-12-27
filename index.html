@@ -98,16 +98,34 @@ const terminal = document.getElementById('terminal');
 const input = document.getElementById('commandInput');
 
 const responses = [
-  'Command accepted.',
-  'Executing...',
-  'Access granted.',
-  'Decrypting data...',
-  'Process completed.'
+  ['Command accepted.', 'Initializing modules...', 'Decrypting data...', 'Process completed.'],
+  ['Access granted.', 'Bypassing firewall...', 'Establishing secure tunnel...', 'Connection stable.'],
+  ['Executing...', 'Scanning nodes...', 'No threats detected.', 'Execution finished.'],
+  ['Permission verified.', 'Injecting payload...', 'Verifying checksum...', 'Injection successful.']
 ];
 
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && input.value.trim() !== '') {
     const userLine = document.createElement('div');
+    userLine.className = 'line';
+    userLine.textContent = '> ' + input.value;
+    terminal.appendChild(userLine);
+
+    const sequence = responses[Math.floor(Math.random() * responses.length)];
+
+    sequence.forEach((text, index) => {
+      setTimeout(() => {
+        const line = document.createElement('div');
+        line.className = 'line';
+        line.textContent = text;
+        terminal.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+      }, 400 * (index + 1));
+    });
+
+    input.value = '';
+  }
+});
     userLine.className = 'line';
     userLine.textContent = '> ' + input.value;
     terminal.appendChild(userLine);
