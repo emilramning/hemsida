@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fake Hacker Screen</title>
 <style>
   body {
@@ -12,25 +12,21 @@
     font-family: monospace;
     overflow: hidden;
   }
-
   canvas {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
   }
-
   #terminal {
     position: fixed;
-    bottom: 40px;
+    bottom: 42px;
     width: 100%;
     max-height: 40vh;
-    padding: 15px;
+    padding: 12px;
     box-sizing: border-box;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0,0,0,0.85);
     overflow-y: auto;
     border-top: 1px solid #00ff00;
   }
-
   #commandInput {
     position: fixed;
     bottom: 0;
@@ -42,22 +38,18 @@
     border-top: 1px solid #00ff00;
     font-family: monospace;
     outline: none;
-    box-sizing: border-box;
   }
-
-  .line {
-    margin-bottom: 6px;
-  }
+  .line { margin-bottom: 6px; }
 </style>
 </head>
 <body>
 
 <canvas id="matrix"></canvas>
 <div id="terminal"></div>
-<input id="commandInput" placeholder="type a command and press Enter" />
+<input id="commandInput" placeholder="type a command and press Enter">
 
 <script>
-// ===== MATRIX RAIN =====
+// ===== MATRIX =====
 const canvas = document.getElementById('matrix');
 const ctx = canvas.getContext('2d');
 
@@ -68,75 +60,58 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
-const letters = '01';
+const chars = '01';
 const fontSize = 16;
 let columns = Math.floor(canvas.width / fontSize);
 let drops = new Array(columns).fill(1);
 
 function drawMatrix() {
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
   ctx.fillStyle = '#00ff00';
   ctx.font = fontSize + 'px monospace';
 
   for (let i = 0; i < drops.length; i++) {
-    const text = letters[Math.floor(Math.random() * letters.length)];
-    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
+    const char = chars[Math.floor(Math.random() * chars.length)];
+    ctx.fillText(char, i * fontSize, drops[i] * fontSize);
     if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
       drops[i] = 0;
     }
     drops[i]++;
   }
 }
-
 setInterval(drawMatrix, 50);
 
-// ===== TERMINAL INPUT =====
+// ===== TERMINAL =====
 const terminal = document.getElementById('terminal');
 const input = document.getElementById('commandInput');
 
-const responses = [
+const sequences = [
   ['Command accepted.', 'Initializing modules...', 'Decrypting data...', 'Process completed.'],
   ['Access granted.', 'Bypassing firewall...', 'Establishing secure tunnel...', 'Connection stable.'],
-  ['Executing...', 'Scanning nodes...', 'No threats detected.', 'Execution finished.'],
-  ['Permission verified.', 'Injecting payload...', 'Verifying checksum...', 'Injection successful.']
+  ['Executing...', 'Scanning nodes...', 'No threats detected.', 'Execution finished.']
 ];
 
 input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && input.value.trim() !== '') {
+    const cmd = input.value;
+    input.value = '';
+
     const userLine = document.createElement('div');
     userLine.className = 'line';
-    userLine.textContent = '> ' + input.value;
+    userLine.textContent = '> ' + cmd;
     terminal.appendChild(userLine);
 
-    const sequence = responses[Math.floor(Math.random() * responses.length)];
-
-    sequence.forEach((text, index) => {
+    const seq = sequences[Math.floor(Math.random() * sequences.length)];
+    seq.forEach((text, i) => {
       setTimeout(() => {
         const line = document.createElement('div');
         line.className = 'line';
         line.textContent = text;
         terminal.appendChild(line);
         terminal.scrollTop = terminal.scrollHeight;
-      }, 400 * (index + 1));
+      }, 500 * (i + 1));
     });
-
-    input.value = '';
-  }
-});
-    userLine.className = 'line';
-    userLine.textContent = '> ' + input.value;
-    terminal.appendChild(userLine);
-
-    const responseLine = document.createElement('div');
-    responseLine.className = 'line';
-    responseLine.textContent = responses[Math.floor(Math.random() * responses.length)];
-    terminal.appendChild(responseLine);
-
-    terminal.scrollTop = terminal.scrollHeight;
-    input.value = '';
   }
 });
 </script>
