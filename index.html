@@ -5,45 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fake Hacker Screen</title>
 <style>
-  body {
-    margin: 0;
-    background: black;
-    color: #00ff00;
-    font-family: monospace;
-    overflow: hidden;
-  }
-  canvas {
-    position: fixed;
-    inset: 0;
-  }
-  #terminal {
-    position: fixed;
-    bottom: 42px;
-    width: 100%;
-    max-height: 40vh;
-    padding: 12px;
-    box-sizing: border-box;
-    background: rgba(0,0,0,0.85);
-    overflow-y: auto;
-    border-top: 1px solid #00ff00;
-  }
-  #commandInput {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    padding: 10px;
-    background: black;
-    color: #00ff00;
-    border: none;
-    border-top: 1px solid #00ff00;
-    font-family: monospace;
-    outline: none;
-  }
-  .line { margin-bottom: 6px; }
+  body { margin:0; background:black; color:#00ff00; font-family:monospace; overflow:hidden; }
+  canvas { position:fixed; inset:0; }
+  #terminal { position:fixed; bottom:42px; width:100%; max-height:40vh; padding:12px; box-sizing:border-box; background:rgba(0,0,0,0.85); overflow-y:auto; border-top:1px solid #00ff00; }
+  #commandInput { position:fixed; bottom:0; width:100%; padding:10px; background:black; color:#00ff00; border:none; border-top:1px solid #00ff00; font-family:monospace; outline:none; }
+  .line { margin-bottom:6px; }
+  .alert { color:#ff3333; }
+  .bar { margin:6px 0; }
 </style>
 </head>
 <body>
-
 <canvas id="matrix"></canvas>
 <div id="terminal"></div>
 <input id="commandInput" placeholder="type a command and press Enter">
@@ -52,69 +23,60 @@
 // ===== MATRIX =====
 const canvas = document.getElementById('matrix');
 const ctx = canvas.getContext('2d');
-
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+function resize(){ canvas.width=innerWidth; canvas.height=innerHeight; }
+resize(); addEventListener('resize', resize);
+const chars='01', fontSize=16;
+let columns=Math.floor(canvas.width/fontSize), drops=new Array(columns).fill(1);
+function drawMatrix(){
+  ctx.fillStyle='rgba(0,0,0,0.05)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#00ff00'; ctx.font=fontSize+'px monospace';
+  for(let i=0;i<drops.length;i++){ const c=chars[Math.floor(Math.random()*chars.length)]; ctx.fillText(c,i*fontSize,drops[i]*fontSize); if(drops[i]*fontSize>canvas.height && Math.random()>0.975) drops[i]=0; drops[i]++; }
 }
-resize();
-window.addEventListener('resize', resize);
-
-const chars = '01';
-const fontSize = 16;
-let columns = Math.floor(canvas.width / fontSize);
-let drops = new Array(columns).fill(1);
-
-function drawMatrix() {
-  ctx.fillStyle = 'rgba(0,0,0,0.05)';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle = '#00ff00';
-  ctx.font = fontSize + 'px monospace';
-
-  for (let i = 0; i < drops.length; i++) {
-    const char = chars[Math.floor(Math.random() * chars.length)];
-    ctx.fillText(char, i * fontSize, drops[i] * fontSize);
-    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-      drops[i] = 0;
-    }
-    drops[i]++;
-  }
-}
-setInterval(drawMatrix, 50);
+setInterval(drawMatrix,50);
 
 // ===== TERMINAL =====
-const terminal = document.getElementById('terminal');
-const input = document.getElementById('commandInput');
+const terminal=document.getElementById('terminal');
+const input=document.getElementById('commandInput');
 
-const sequences = [
-  ['Command accepted.', 'Initializing modules...', 'Decrypting data...', 'Process completed.'],
-  ['Access granted.', 'Bypassing firewall...', 'Establishing secure tunnel...', 'Connection stable.'],
-  ['Executing...', 'Scanning nodes...', 'No threats detected.', 'Execution finished.']
+function print(text, cls=''){ const d=document.createElement('div'); d.className='line '+cls; d.textContent=text; terminal.appendChild(d); terminal.scrollTop=terminal.scrollHeight; }
+
+const helpText=[
+  'Available commands:',
+  'help, clear, root, inject, scan, selfdestruct'
 ];
 
-input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && input.value.trim() !== '') {
-    const cmd = input.value;
-    input.value = '';
+const sequences=[
+  ['Command accepted.','Initializing modules...','Decrypting data...','Process completed.'],
+  ['Access granted.','Bypassing firewall...','Establishing secure tunnel...','Connection stable.'],
+  ['Executing...','Scanning nodes...','No threats detected.','Execution finished.']
+];
 
-    const userLine = document.createElement('div');
-    userLine.className = 'line';
-    userLine.textContent = '> ' + cmd;
-    terminal.appendChild(userLine);
+function progressBar(doneText){
+  let p=0; const bar=document.createElement('div'); bar.className='line bar'; terminal.appendChild(bar);
+  const t=setInterval(()=>{
+    p+=10; const blocks=Math.floor(p/10);
+    bar.textContent='['+'█'.repeat(blocks)+'░'.repeat(10-blocks)+'] '+p+'%'; terminal.scrollTop=terminal.scrollHeight;
+    if(p>=100){ clearInterval(t); print(doneText); }
+  },300);
+}
 
-    const seq = sequences[Math.floor(Math.random() * sequences.length)];
-    seq.forEach((text, i) => {
-      setTimeout(() => {
-        const line = document.createElement('div');
-        line.className = 'line';
-        line.textContent = text;
-        terminal.appendChild(line);
-        terminal.scrollTop = terminal.scrollHeight;
-      }, 500 * (i + 1));
-    });
+function alertFlash(){ print('WARNING: Unusual activity detected','alert'); }
+
+input.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && input.value.trim()!==''){
+    const cmd=input.value.trim().toLowerCase(); input.value=''; print('> '+cmd);
+
+    if(cmd==='help'){ helpText.forEach(t=>print(t)); return; }
+    if(cmd==='clear'){ terminal.innerHTML=''; return; }
+    if(cmd==='root'){ print('ROOT ACCESS GRANTED'); alertFlash(); return; }
+    if(cmd==='inject'){ progressBar('Injection successful.'); return; }
+    if(cmd==='selfdestruct'){ print('Self destruct sequence initiated...'); progressBar('Sequence aborted.'); return; }
+
+    const seq=sequences[Math.floor(Math.random()*sequences.length)];
+    seq.forEach((t,i)=> setTimeout(()=>print(t), 400*(i+1)));
+    if(Math.random()<0.25) setTimeout(alertFlash, 1200);
   }
 });
 </script>
-
 </body>
 </html>
