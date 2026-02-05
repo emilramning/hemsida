@@ -2,15 +2,13 @@
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
-<title>Learning</title>
+<title>•</title>
 <style>
 html,body{
   margin:0;
   padding:0;
-  width:100%;
-  height:100%;
-  background:#000;
   overflow:hidden;
+  background:#000;
   cursor:none;
 }
 canvas{display:block;}
@@ -26,58 +24,71 @@ const ctx = c.getContext("2d");
 c.width = innerWidth;
 c.height = innerHeight;
 
-let mouse = {x:c.width/2,y:c.height/2};
-let ghost = {x:mouse.x,y:mouse.y};
-let memory = [];
-let phase = 0;
-let t0 = Date.now();
+let mouse = {x:c.width/2, y:c.height/2};
+const particles = [];
+const COUNT = 2000;
+
+class Particle{
+  constructor(){
+    this.x = Math.random()*c.width;
+    this.y = Math.random()*c.height;
+    this.vx = 0;
+    this.vy = 0;
+    this.size = Math.random()*1.2 + 0.2;
+  }
+  update(){
+    let dx = mouse.x - this.x;
+    let dy = mouse.y - this.y;
+    let dist = Math.sqrt(dx*dx + dy*dy) + 0.1;
+
+    let force = Math.min(0.4, 30/dist);
+    this.vx += dx/dist * force;
+    this.vy += dy/dist * force;
+
+    this.vx *= 0.96;
+    this.vy *= 0.96;
+
+    this.x += this.vx;
+    this.y += this.vy;
+
+    if(this.x<0||this.x>c.width||this.y<0||this.y>c.height){
+      this.x = Math.random()*c.width;
+      this.y = Math.random()*c.height;
+    }
+  }
+  draw(){
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
+    ctx.fillStyle="rgba(255,255,255,0.6)";
+    ctx.fill();
+  }
+}
+
+for(let i=0;i<COUNT;i++) particles.push(new Particle());
 
 addEventListener("mousemove",e=>{
   mouse.x = e.clientX;
   mouse.y = e.clientY;
-  memory.push({x:e.clientX,y:e.clientY});
-  if(memory.length > 200) memory.shift();
 });
-
-function update(){
-  const t = (Date.now()-t0)/1000;
-
-  if(t>10) phase = 1;
-  if(t>30) phase = 2;
-  if(t>60) phase = 3;
-
-  // AI-ish prediction
-  if(phase>=2 && memory.length>10){
-    let a = memory[memory.length-1];
-    let b = memory[memory.length-10];
-    ghost.x += (a.x + (a.x-b.x)*2 - ghost.x)*0.05;
-    ghost.y += (a.y + (a.y-b.y)*2 - ghost.y)*0.05;
-  } else {
-    ghost.x += (mouse.x-ghost.x)*0.1;
-    ghost.y += (mouse.y-ghost.y)*0.1;
-  }
-
-  ctx.fillStyle = "rgba(0,0,0,0.08)";
-  ctx.fillRect(0,0,c.width,c.height);
-
-  ctx.beginPath();
-  ctx.arc(ghost.x,ghost.y,40,0,Math.PI*2);
-  ctx.fillStyle = phase<3
-    ? "rgba(255,255,255,0.15)"
-    : "rgba(255,50,50,0.2)";
-  ctx.shadowBlur = 60;
-  ctx.shadowColor = phase<3 ? "#fff" : "#f00";
-  ctx.fill();
-
-  requestAnimationFrame(update);
-}
 
 addEventListener("resize",()=>{
   c.width = innerWidth;
   c.height = innerHeight;
 });
 
-update();
+function loop(){
+  ctx.fillStyle="rgba(0,0,0,0.15)";
+  ctx.fillRect(0,0,c.width,c.height);
+
+  particles.forEach(p=>{
+    p.update();
+    p.draw();
+  });
+
+  requestAnimationFrame(loop);
+}
+
+loop();
 </script>
 
 </body>
