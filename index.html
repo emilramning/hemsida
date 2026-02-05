@@ -2,94 +2,74 @@
 <html lang="sv">
 <head>
 <meta charset="UTF-8">
-<title>Fluid Rainbow</title>
+<title>Rainbow Smoke – Black</title>
 <style>
-html,body{
-  margin:0;
-  padding:0;
-  overflow:hidden;
-  background:black;
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #000; /* SVART BAKGRUND */
+  cursor: none;
 }
-canvas{display:block;}
+canvas {
+  display: block;
+}
 </style>
 </head>
 <body>
 
-<canvas id="c"></canvas>
+<canvas id="canvas"></canvas>
 
 <script>
-const canvas = document.getElementById("c");
+const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-canvas.width = innerWidth;
-canvas.height = innerHeight;
 
-let mouse = {x:0,y:0,px:0,py:0};
-let hue = 0;
-const flow = [];
-
-for(let i=0;i<5000;i++){
-  flow.push({
-    x: Math.random()*canvas.width,
-    y: Math.random()*canvas.height,
-    vx:0,
-    vy:0,
-    life:Math.random()*100
-  });
-}
-
-function step(){
-  ctx.fillStyle="rgba(0,0,0,0.08)";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  flow.forEach(p=>{
-    let dx = mouse.x - p.x;
-    let dy = mouse.y - p.y;
-    let d = Math.sqrt(dx*dx + dy*dy) || 1;
-
-    let force = Math.min(80/d,2);
-    let angle = Math.atan2(dy,dx) + Math.sin(d*0.05)*1.5;
-
-    p.vx += Math.cos(angle)*force*0.6;
-    p.vy += Math.sin(angle)*force*0.6;
-
-    p.vx *= 0.92;
-    p.vy *= 0.92;
-
-    p.x += p.vx;
-    p.y += p.vy;
-
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,1.2,0,Math.PI*2);
-    ctx.fillStyle = `hsla(${hue+p.life},100%,60%,0.5)`;
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = `hsla(${hue},100%,60%,1)`;
-    ctx.fill();
-
-    p.life++;
-    if(p.x<0||p.x>canvas.width||p.y<0||p.y>canvas.height){
-      p.x = mouse.x;
-      p.y = mouse.y;
-      p.vx=p.vy=0;
-    }
-  });
-
-  hue+=0.4;
-  requestAnimationFrame(step);
-}
-
-addEventListener("mousemove",e=>{
-  mouse.px = mouse.x;
-  mouse.py = mouse.y;
-  mouse.x = e.clientX;
-  mouse.y = e.clientY;
-});
-
-addEventListener("resize",()=>{
+function resize(){
   canvas.width = innerWidth;
   canvas.height = innerHeight;
+}
+resize();
+
+let lastX = canvas.width / 2;
+let lastY = canvas.height / 2;
+let hue = 0;
+
+function draw(x, y){
+  const dx = x - lastX;
+  const dy = y - lastY;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+
+  ctx.lineWidth = dist * 0.6 + 4;
+  ctx.lineCap = "round";
+
+  ctx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.25)`;
+  ctx.shadowBlur = 40;
+  ctx.shadowColor = `hsla(${hue}, 100%, 60%, 1)`;
+
+  ctx.beginPath();
+  ctx.moveTo(lastX, lastY);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+
+  lastX = x;
+  lastY = y;
+  hue += 1.5;
+}
+
+function fade(){
+  // Mjuk svart fade → rök-effekt
+  ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  requestAnimationFrame(fade);
+}
+
+addEventListener("mousemove", e => {
+  draw(e.clientX, e.clientY);
 });
 
-step();
+addEventListener("resize", resize);
+
+fade();
 </script>
 
 </body>
