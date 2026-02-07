@@ -1,52 +1,5 @@
-<!DOCTYPE html>
-<html lang="sv">
-<head>
-<meta charset="UTF-8">
-<title>Space Sandbox</title>
-<style>
-html,body{
-  margin:0;
-  padding:0;
-  overflow:hidden;
-  background:black;
-  font-family:system-ui;
-}
-canvas{display:block;}
-
-#menu{
-  position:fixed;
-  top:20px;
-  right:20px;
-  background:rgba(0,0,0,0.6);
-  border:1px solid rgba(255,255,255,0.2);
-  padding:10px;
-  border-radius:10px;
-}
-button{
-  display:block;
-  margin:6px 0;
-  width:140px;
-  background:#111;
-  color:white;
-  border:1px solid #333;
-  padding:8px;
-  cursor:pointer;
-}
-button.active{border-color:white;}
-</style>
-</head>
-<body>
-
-<canvas id="c"></canvas>
-
-<div id="menu">
-  <button data-type="blackhole">🕳 Black Hole</button>
-  <button data-type="planet">🪐 Planet</button>
-  <button id="reset">♻ Reset</button>
-</div>
-
 <script>
-console.log("GRAVITY VERSION LOADED");
+console.log("SELECTIVE GRAVITY LOADED");
 
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
@@ -55,31 +8,34 @@ c.height = innerHeight;
 
 let mode = null;
 const stars = [];
-const objects = [];
+const planets = [];
+const blackholes = [];
 const rockets = [];
 
-const G = 0.15; // gravitationskonstant
+const G = 0.25;
 
-class Body{
+// ===== BAS-KLASS =====
+class Body {
   constructor(x,y,mass){
     this.x=x; this.y=y;
     this.vx=0; this.vy=0;
     this.mass=mass;
   }
-  applyGravity(other){
-    const dx = other.x-this.x;
-    const dy = other.y-this.y;
-    const d = Math.sqrt(dx*dx+dy*dy)+0.1;
-    const f = G * other.mass / (d*d);
+  pullFrom(bh){
+    const dx = bh.x - this.x;
+    const dy = bh.y - this.y;
+    const d = Math.sqrt(dx*dx + dy*dy) + 0.5;
+    const f = G * bh.mass / (d*d);
     this.vx += dx/d * f;
     this.vy += dy/d * f;
   }
   update(){
-    this.x+=this.vx;
-    this.y+=this.vy;
+    this.x += this.vx;
+    this.y += this.vy;
   }
 }
 
+// ===== STAR =====
 class Star extends Body{
   constructor(){
     super(Math.random()*c.width,Math.random()*c.height,1);
@@ -93,15 +49,22 @@ class Star extends Body{
   }
 }
 
+// ===== PLANET (STATISK) =====
 class Planet extends Body{
   constructor(x,y){
-    super(x,y,400);
+    super(x,y,600);
     this.r=18;
   }
+  update(){
+    // rör sig ENDAST om svart hål finns
+    blackholes.forEach(bh=>this.pullFrom(bh));
+    this.x+=this.vx;
+    this.y+=this.vy;
+  }
   draw(){
-    const g = ctx.createRadialGradient(this.x-5,this.y-5,5,this.x,this.y,this.r);
-    g.addColorStop(0,"#6fbfff");
-    g.addColorStop(1,"#1b3d6b");
+    const g = ctx.createRadialGradient(this.x-6,this.y-6,4,this.x,this.y,this.r);
+    g.addColorStop(0,"#7fd4ff");
+    g.addColorStop(1,"#1b3558");
     ctx.fillStyle=g;
     ctx.beginPath();
     ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
@@ -109,9 +72,11 @@ class Planet extends Body{
   }
 }
 
-class BlackHole extends Body{
+// ===== BLACK HOLE =====
+class BlackHole{
   constructor(x,y){
-    super(x,y,2000);
+    this.x=x; this.y=y;
+    this.mass=3000;
     this.r=35;
   }
   draw(){
@@ -120,7 +85,7 @@ class BlackHole extends Body{
     ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
     ctx.fill();
 
-    ctx.strokeStyle="rgba(255,255,255,0.2)";
+    ctx.strokeStyle="rgba(255,255,255,0.25)";
     ctx.lineWidth=2;
     ctx.beginPath();
     ctx.arc(this.x,this.y,this.r+10,0,Math.PI*2);
@@ -128,10 +93,15 @@ class BlackHole extends Body{
   }
 }
 
+// ===== ROCKET =====
 class Rocket extends Body{
   constructor(){
     super(-100,Math.random()*c.height,200);
     this.vx=2;
+  }
+  update(){
+    blackholes.forEach(bh=>this.pullFrom(bh));
+    super.update();
   }
   draw(){
     ctx.fillStyle="white";
@@ -141,26 +111,28 @@ class Rocket extends Body{
   }
 }
 
-// init
-for(let i=0;i<1200;i++) stars.push(new Star());
+// INIT
+for(let i=0;i<1000;i++) stars.push(new Star());
 rockets.push(new Rocket());
 
+// MENU
 document.querySelectorAll("button[data-type]").forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
     b.classList.add("active");
     mode=b.dataset.type;
-  }
+  };
 });
 
 document.getElementById("reset").onclick=()=>{
-  objects.length=0;
+  planets.length=0;
+  blackholes.length=0;
 };
 
 addEventListener("click",e=>{
   if(e.clientX>c.width-200) return;
-  if(mode==="planet") objects.push(new Planet(e.clientX,e.clientY));
-  if(mode==="blackhole") objects.push(new BlackHole(e.clientX,e.clientY));
+  if(mode==="planet") planets.push(new Planet(e.clientX,e.clientY));
+  if(mode==="blackhole") blackholes.push(new BlackHole(e.clientX,e.clientY));
 });
 
 addEventListener("resize",()=>{
@@ -168,40 +140,35 @@ addEventListener("resize",()=>{
   c.height=innerHeight;
 });
 
-function applyGravityAll(bodies){
-  bodies.forEach(a=>{
-    objects.forEach(o=>{
-      if(a!==o) a.applyGravity(o);
-    });
-  });
-}
-
+// LOOP
 function loop(){
-  ctx.fillStyle="rgba(0,0,0,0.25)";
+  ctx.fillStyle="rgba(0,0,0,0.3)";
   ctx.fillRect(0,0,c.width,c.height);
 
-  applyGravityAll(stars);
-  applyGravityAll(objects);
-  applyGravityAll(rockets);
+  stars.forEach(s=>{
+    blackholes.forEach(bh=>s.pullFrom(bh));
+    s.update();
+    s.draw();
+  });
 
-  [...stars,...objects,...rockets].forEach(b=>{
-    b.update();
-    b.draw();
+  planets.forEach(p=>{
+    p.update();
+    p.draw();
   });
 
   rockets.forEach(r=>{
-    if(r.x>c.width+100){
+    r.update();
+    r.draw();
+    if(r.x>c.width+200){
       r.x=-200;
       r.y=Math.random()*c.height;
-      r.vx=2;
-      r.vy=0;
+      r.vx=2; r.vy=0;
     }
   });
+
+  blackholes.forEach(bh=>bh.draw());
 
   requestAnimationFrame(loop);
 }
 loop();
 </script>
-
-</body>
-</html>
