@@ -273,3 +273,19 @@ loop();
 
 </body>
 </html>
+
+document.getElementById("reset").addEventListener("click", e => {
+  planets.length = 0;
+  blackholes.length = 0;
+  mode = null;
+  document.querySelectorAll("button").forEach(x => x.classList.remove("active"));
+  
+  // Återskapa stjärnor
+  stars.length = 0;
+  for(let i=0;i<1000;i++){
+    stars.push(new Star());
+  }
+
+  e.stopPropagation(); // förhindra att klick når canvas
+});
+
