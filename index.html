@@ -10,27 +10,28 @@ html,body{
   overflow:hidden;
   background:#000;
   color:white;
-  font-family:system-ui, sans-serif;
+  font-family:system-ui,sans-serif;
 }
-canvas{display:block;}
+canvas{display:block}
 
 #menu{
   position:fixed;
   top:20px;
   right:20px;
   background:rgba(0,0,0,0.6);
-  border:1px solid rgba(255,255,255,0.2);
+  border:1px solid rgba(255,255,255,0.25);
   padding:12px;
-  border-radius:10px;
+  border-radius:12px;
+  backdrop-filter: blur(6px);
 }
 #menu button{
-  display:block;
-  width:140px;
+  width:150px;
   margin:6px 0;
+  padding:8px;
   background:#111;
   color:white;
   border:1px solid #333;
-  padding:8px;
+  border-radius:6px;
   cursor:pointer;
 }
 #menu button.active{
@@ -45,126 +46,214 @@ canvas{display:block;}
 <div id="menu">
   <button data-type="blackhole">🕳 Black Hole</button>
   <button data-type="planet">🪐 Planet</button>
+  <button id="reset">🔁 Reset</button>
 </div>
 
 <script>
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
-c.width = innerWidth;
-c.height = innerHeight;
+function resize(){ c.width=innerWidth; c.height=innerHeight; }
+resize();
 
-let mode = null;
-const objects = [];
-const stars = [];
+const stars=[];
+const objects=[];
+let mode=null;
 
+// ---------- STARS ----------
 class Star{
   constructor(){
-    this.x = Math.random()*c.width;
-    this.y = Math.random()*c.height;
-    this.vx = 0;
-    this.vy = 0;
-    this.size = Math.random()*1.5+0.3;
+    this.x=Math.random()*c.width;
+    this.y=Math.random()*c.height;
+    this.vx=0;
+    this.vy=0;
+    this.r=Math.random()*1.5+0.3;
   }
   update(){
     objects.forEach(o=>{
-      let dx = o.x-this.x;
-      let dy = o.y-this.y;
-      let d = Math.sqrt(dx*dx+dy*dy)+0.1;
-      let force = o.type==="blackhole" ? 80/d : 20/d;
-      this.vx += dx/d * force * o.strength;
-      this.vy += dy/d * force * o.strength;
+      let dx=o.x-this.x;
+      let dy=o.y-this.y;
+      let d=Math.sqrt(dx*dx+dy*dy)+0.5;
+      let f=o.mass/(d*d);
+      this.vx+=dx/d*f;
+      this.vy+=dy/d*f;
     });
-
-    this.vx *= 0.99;
-    this.vy *= 0.99;
-    this.x += this.vx;
-    this.y += this.vy;
-
+    this.vx*=0.995;
+    this.vy*=0.995;
+    this.x+=this.vx;
+    this.y+=this.vy;
     if(this.x<0) this.x=c.width;
     if(this.x>c.width) this.x=0;
     if(this.y<0) this.y=c.height;
     if(this.y>c.height) this.y=0;
   }
   draw(){
-    ctx.beginPath();
-    ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
     ctx.fillStyle="white";
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
     ctx.fill();
   }
 }
 
+// ---------- OBJECTS ----------
 class SpaceObject{
   constructor(x,y,type){
     this.x=x;
     this.y=y;
     this.type=type;
-    this.strength = type==="blackhole" ? 0.02 : 0.01;
+    if(type==="planet"){
+      this.r=20+Math.random()*20;
+      this.mass=0.05;
+    } else {
+      this.r=30;
+      this.mass=0.2;
+      this.angle=Math.random()*Math.PI*2;
+    }
+    this.vx=0;
+    this.vy=0;
   }
+
+  update(){
+    objects.forEach(o=>{
+      if(o===this) return;
+      let dx=o.x-this.x;
+      let dy=o.y-this.y;
+      let d=Math.sqrt(dx*dx+dy*dy)+1;
+      let f=o.mass/(d*d);
+      this.vx+=dx/d*f;
+      this.vy+=dy/d*f;
+    });
+    this.x+=this.vx;
+    this.y+=this.vy;
+  }
+
   draw(){
-    if(this.type==="blackhole"){
-      let g = ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,40);
-      g.addColorStop(0,"#000");
-      g.addColorStop(1,"rgba(255,255,255,0.2)");
+    if(this.type==="planet"){
+      // planet shading
+      let g=ctx.createRadialGradient(
+        this.x-this.r*0.3,this.y-this.r*0.3,5,
+        this.x,this.y,this.r
+      );
+      g.addColorStop(0,"#6ec6ff");
+      g.addColorStop(1,"#003");
       ctx.fillStyle=g;
       ctx.beginPath();
-      ctx.arc(this.x,this.y,40,0,Math.PI*2);
+      ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
       ctx.fill();
-    } else {
+
+      // atmosphere
+      ctx.strokeStyle="rgba(150,200,255,0.2)";
+      ctx.lineWidth=4;
       ctx.beginPath();
-      ctx.arc(this.x,this.y,20,0,Math.PI*2);
-      ctx.fillStyle="#3fa9f5";
+      ctx.arc(this.x,this.y,this.r+2,0,Math.PI*2);
+      ctx.stroke();
+    } else {
+      // black hole
+      this.angle+=0.02;
+      let g=ctx.createRadialGradient(this.x,this.y,5,this.x,this.y,50);
+      g.addColorStop(0,"#000");
+      g.addColorStop(1,"rgba(200,200,255,0.25)");
+      ctx.fillStyle=g;
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,50,0,Math.PI*2);
       ctx.fill();
+
+      ctx.save();
+      ctx.translate(this.x,this.y);
+      ctx.rotate(this.angle);
+      ctx.strokeStyle="rgba(255,255,255,0.3)";
+      ctx.beginPath();
+      ctx.ellipse(0,0,60,20,0,0,Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
     }
   }
 }
 
-// rocket
-let rocketX = -100;
-function drawRocket(){
-  rocketX += 2;
-  if(rocketX > c.width+100) rocketX = -200;
-  ctx.fillStyle="white";
-  ctx.fillRect(rocketX,100,40,6);
+// ---------- ROCKET ----------
+let rocketTimer=0;
+let rocket=null;
+
+function spawnRocket(){
+  rocket={
+    x:-100,
+    y:Math.random()*c.height*0.5,
+    vx:3,
+    vy:1
+  };
 }
 
-// init stars
+function drawRocket(){
+  if(!rocket) return;
+  rocket.x+=rocket.vx;
+  rocket.y+=rocket.vy;
+
+  ctx.save();
+  ctx.translate(rocket.x,rocket.y);
+  ctx.rotate(0.3);
+
+  // body
+  ctx.fillStyle="#ccc";
+  ctx.fillRect(0,0,40,10);
+  // nose
+  ctx.beginPath();
+  ctx.moveTo(40,0);
+  ctx.lineTo(55,5);
+  ctx.lineTo(40,10);
+  ctx.fill();
+  // flame
+  ctx.fillStyle="orange";
+  ctx.beginPath();
+  ctx.moveTo(0,5);
+  ctx.lineTo(-15,0);
+  ctx.lineTo(-15,10);
+  ctx.fill();
+
+  ctx.restore();
+
+  if(rocket.x>c.width+200) rocket=null;
+}
+
+// ---------- INIT ----------
 for(let i=0;i<1200;i++) stars.push(new Star());
 
-document.querySelectorAll("#menu button").forEach(b=>{
+document.querySelectorAll("#menu button[data-type]").forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll("#menu button").forEach(x=>x.classList.remove("active"));
     b.classList.add("active");
-    mode = b.dataset.type;
+    mode=b.dataset.type;
   };
 });
 
+document.getElementById("reset").onclick=()=>{
+  objects.length=0;
+};
+
 addEventListener("click",e=>{
   if(!mode) return;
-  if(e.clientX > c.width-200) return;
+  if(e.clientX>c.width-200) return;
   objects.push(new SpaceObject(e.clientX,e.clientY,mode));
 });
 
-addEventListener("resize",()=>{
-  c.width = innerWidth;
-  c.height = innerHeight;
-});
+addEventListener("resize",resize);
 
+// ---------- LOOP ----------
 function loop(){
   ctx.fillStyle="rgba(0,0,0,0.25)";
   ctx.fillRect(0,0,c.width,c.height);
 
-  stars.forEach(s=>{
-    s.update();
-    s.draw();
-  });
+  stars.forEach(s=>{s.update();s.draw();});
+  objects.forEach(o=>{o.update();o.draw();});
 
-  objects.forEach(o=>o.draw());
+  rocketTimer++;
+  if(rocketTimer>600){
+    spawnRocket();
+    rocketTimer=0;
+  }
   drawRocket();
 
   requestAnimationFrame(loop);
 }
 loop();
 </script>
-
 </body>
 </html>
