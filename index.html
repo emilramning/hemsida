@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Sandbox Simulator</title>
+<title>Space Sandbox Simulator - Epic Version</title>
 <style>
   body, html {
     margin: 0;
@@ -44,7 +44,7 @@
 </div>
 
 <script>
-console.log("SELECTIVE GRAVITY LOADED");
+console.log("SELECTIVE GRAVITY EPIC LOADED");
 
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
@@ -54,10 +54,12 @@ c.height = innerHeight;
 let mode = null;
 let G = parseFloat(document.getElementById("gravSlider").value);
 
-const stars = [];
 const planets = [];
 const blackholes = [];
 const rockets = [];
+
+// ===== STARS LAGER FÖR PARALLAX =====
+const starsLayers = [[],[],[]]; // 3 lager: 0=nära, 2=långt bort
 
 ctx.imageSmoothingEnabled = true;
 
@@ -84,10 +86,29 @@ class Body {
 
 // ===== STAR =====
 class Star extends Body{
-  constructor(){
+  constructor(layer){
     super(Math.random()*c.width,Math.random()*c.height,1);
     this.size=Math.random()*1.5+0.5;
+    this.layer = layer; // 0=nära, 1=medium, 2=långt bort
     this.color = ["#fff", "#ffea00", "#9fdfff"][Math.floor(Math.random()*3)];
+  }
+  update(){
+    // gravitation påverkar mest nära lager
+    blackholes.forEach(bh=>{
+      let weight = (3-this.layer)/3; // närmare lager påverkas mer
+      const dx = bh.x - this.x;
+      const dy = bh.y - this.y;
+      const d = Math.sqrt(dx*dx + dy*dy) + 0.5;
+      const f = G * bh.mass / (d*d) * weight;
+      this.vx += dx/d * f;
+      this.vy += dy/d * f;
+    });
+    super.update();
+    // wrap around
+    if(this.x<0) this.x=c.width;
+    if(this.x>c.width) this.x=0;
+    if(this.y<0) this.y=c.height;
+    if(this.y>c.height) this.y=0;
   }
   draw(){
     ctx.fillStyle=this.color;
@@ -110,7 +131,7 @@ class Planet extends Body{
     // trail
     this.trail.push({x:this.x,y:this.y});
     if(this.trail.length>20) this.trail.shift();
-    // check collision with black hole
+    // collision med svart hål
     blackholes.forEach(bh=>{
       const dx = bh.x - this.x;
       const dy = bh.y - this.y;
@@ -129,7 +150,6 @@ class Planet extends Body{
       else ctx.lineTo(p.x,p.y);
     }
     ctx.stroke();
-
     // planet
     const g = ctx.createRadialGradient(this.x-6,this.y-6,4,this.x,this.y,this.r);
     g.addColorStop(0,"#7fd4ff");
@@ -147,15 +167,18 @@ class BlackHole{
     this.x=x; this.y=y;
     this.mass=3000;
     this.r=35;
+    this.pulse = 0;
   }
   draw(){
+    // svart hål
     ctx.fillStyle="black";
     ctx.beginPath();
     ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
     ctx.fill();
-
-    ctx.strokeStyle="rgba(255,255,255,0.25)";
-    ctx.lineWidth=2;
+    // pulserande ljusring
+    this.pulse += 0.05;
+    ctx.strokeStyle = `rgba(255,255,255,${0.25 + Math.sin(this.pulse)*0.1})`;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(this.x,this.y,this.r+10,0,Math.PI*2);
     ctx.stroke();
@@ -172,7 +195,6 @@ class Rocket extends Body{
   update(){
     blackholes.forEach(bh=>this.pullFrom(bh));
     super.update();
-    // trail
     this.trail.push({x:this.x,y:this.y});
     if(this.trail.length>15) this.trail.shift();
     if(this.x>c.width+200){
@@ -183,7 +205,6 @@ class Rocket extends Body{
     }
   }
   draw(){
-    // trail
     ctx.strokeStyle="orange";
     ctx.beginPath();
     for(let i=0;i<this.trail.length;i++){
@@ -192,7 +213,6 @@ class Rocket extends Body{
       else ctx.lineTo(p.x,p.y);
     }
     ctx.stroke();
-
     ctx.fillStyle="white";
     ctx.fillRect(this.x,this.y,30,6);
     ctx.fillStyle="orange";
@@ -200,11 +220,13 @@ class Rocket extends Body{
   }
 }
 
-// ===== INIT FUNKTION FÖR STJÄRNOR =====
+// ===== INIT STJÄRNOR =====
 function initStars(){
-  stars.length = 0;
-  for(let i=0;i<1000;i++){
-    stars.push(new Star());
+  for(let layer=0;layer<3;layer++){
+    starsLayers[layer].length = 0;
+    for(let i=0;i<1000/3;i++){
+      starsLayers[layer].push(new Star(layer));
+    }
   }
 }
 
@@ -218,7 +240,7 @@ document.querySelectorAll("button[data-type]").forEach(b => {
     document.querySelectorAll("button").forEach(x => x.classList.remove("active"));
     b.classList.add("active");
     mode = b.dataset.type;
-    e.stopPropagation(); // förhindra att klick når canvas
+    e.stopPropagation();
   });
 });
 
@@ -228,8 +250,8 @@ document.getElementById("reset").addEventListener("click", e => {
   blackholes.length = 0;
   mode = null;
   document.querySelectorAll("button").forEach(x => x.classList.remove("active"));
-  initStars(); // Återskapa stjärnor
-  e.stopPropagation(); // förhindra att klick når canvas
+  initStars();
+  e.stopPropagation();
 });
 
 // Gravitation-slider
@@ -239,9 +261,7 @@ document.getElementById("gravSlider").addEventListener("input", e => {
 
 // CANVAS-KLICK
 c.addEventListener("click", e => {
-  // ignorera UI-området
   if(e.clientX < 220 && e.clientY < 150) return;
-
   if(mode === "planet") planets.push(new Planet(e.clientX, e.clientY));
   if(mode === "blackhole") blackholes.push(new BlackHole(e.clientX, e.clientY));
 });
@@ -257,10 +277,11 @@ function loop(){
   ctx.fillStyle="rgba(0,0,0,0.3)";
   ctx.fillRect(0,0,c.width,c.height);
 
-  stars.forEach(s=>{
-    blackholes.forEach(bh=>s.pullFrom(bh));
-    s.update();
-    s.draw();
+  starsLayers.forEach(layer=>{
+    layer.forEach(s=>{
+      s.update();
+      s.draw();
+    });
   });
 
   planets.forEach(p=>{
