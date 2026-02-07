@@ -20,6 +20,7 @@
     background: rgba(0,0,0,0.5);
     padding: 10px;
     border-radius: 10px;
+    z-index: 10;
   }
   button, input[type=range] {
     margin: 5px 0;
@@ -110,7 +111,7 @@ class Planet extends Body{
     this.trail.push({x:this.x,y:this.y});
     if(this.trail.length>20) this.trail.shift();
     // check collision with black hole
-    blackholes.forEach((bh,i)=>{
+    blackholes.forEach(bh=>{
       const dx = bh.x - this.x;
       const dy = bh.y - this.y;
       if(Math.sqrt(dx*dx + dy*dy) < bh.r){
@@ -119,7 +120,7 @@ class Planet extends Body{
     });
   }
   draw(){
-    // draw trail
+    // trail
     ctx.strokeStyle = "rgba(127,212,255,0.4)";
     ctx.beginPath();
     for(let i=0;i<this.trail.length;i++){
@@ -129,7 +130,7 @@ class Planet extends Body{
     }
     ctx.stroke();
 
-    // draw planet
+    // planet
     const g = ctx.createRadialGradient(this.x-6,this.y-6,4,this.x,this.y,this.r);
     g.addColorStop(0,"#7fd4ff");
     g.addColorStop(1,"#1b3558");
@@ -182,7 +183,7 @@ class Rocket extends Body{
     }
   }
   draw(){
-    // draw trail
+    // trail
     ctx.strokeStyle="orange";
     ctx.beginPath();
     for(let i=0;i<this.trail.length;i++){
@@ -203,28 +204,40 @@ class Rocket extends Body{
 for(let i=0;i<1000;i++) stars.push(new Star());
 rockets.push(new Rocket());
 
-// MENU
-document.querySelectorAll("button[data-type]").forEach(b=>{
-  b.onclick=()=>{
-    document.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+// MENU-KNAPPR
+document.querySelectorAll("button[data-type]").forEach(b => {
+  b.addEventListener("click", e => {
+    document.querySelectorAll("button").forEach(x => x.classList.remove("active"));
     b.classList.add("active");
-    mode=b.dataset.type;
-  };
+    mode = b.dataset.type;
+    e.stopPropagation(); // förhindra att klick når canvas
+  });
 });
 
-document.getElementById("reset").onclick=()=>{
-  planets.length=0;
-  blackholes.length=0;
-};
-
-document.getElementById("gravSlider").oninput = e => G = parseFloat(e.target.value);
-
-addEventListener("click",e=>{
-  if(e.clientX>c.width-200) return;
-  if(mode==="planet") planets.push(new Planet(e.clientX,e.clientY));
-  if(mode==="blackhole") blackholes.push(new BlackHole(e.clientX,e.clientY));
+// RESET
+document.getElementById("reset").addEventListener("click", e => {
+  planets.length = 0;
+  blackholes.length = 0;
+  mode = null;
+  document.querySelectorAll("button").forEach(x => x.classList.remove("active"));
+  e.stopPropagation(); // förhindra att klick når canvas
 });
 
+// Gravitation-slider
+document.getElementById("gravSlider").addEventListener("input", e => {
+  G = parseFloat(e.target.value);
+});
+
+// CANVAS-KLICK
+c.addEventListener("click", e => {
+  // ignorera UI-området
+  if(e.clientX < 220 && e.clientY < 150) return;
+
+  if(mode === "planet") planets.push(new Planet(e.clientX, e.clientY));
+  if(mode === "blackhole") blackholes.push(new BlackHole(e.clientX, e.clientY));
+});
+
+// RESIZE
 addEventListener("resize",()=>{
   c.width=innerWidth;
   c.height=innerHeight;
