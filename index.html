@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hello in Every Language 🌍</title>
+  <title>Infinite Typing Machine ✨</title>
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
+      font-family: 'Courier New', Courier, monospace;
+      background: #111;
+      color: #0f0;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -17,115 +18,76 @@
 
     h1 {
       text-align: center;
-      color: #333;
+      color: #0f0;
     }
 
-    #search {
+    #inputBox {
+      width: 90%;
+      max-width: 600px;
       padding: 10px;
-      width: 300px;
-      font-size: 16px;
-      margin-bottom: 20px;
+      font-size: 18px;
+      background: #222;
+      border: 2px solid #0f0;
       border-radius: 5px;
-      border: 1px solid #ccc;
+      color: #0f0;
+      margin-bottom: 20px;
     }
 
-    #list {
-      max-width: 500px;
-      width: 100%;
+    #story {
+      width: 90%;
+      max-width: 800px;
       height: 60vh;
+      background: #111;
+      border: 2px solid #0f0;
+      border-radius: 5px;
+      padding: 15px;
       overflow-y: auto;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      background: white;
-      padding: 10px;
-    }
-
-    .item {
-      padding: 8px;
-      border-bottom: 1px solid #eee;
-      transition: background 0.2s;
-    }
-
-    .item:hover {
-      background: #f0f0f0;
-    }
-
-    .language {
-      font-weight: bold;
-      margin-right: 10px;
-    }
-
-    .hello {
-      color: #0074D9;
+      white-space: pre-wrap;
+      line-height: 1.5;
     }
   </style>
 </head>
 <body>
-  <h1>"Hello" in Every Language 🌍</h1>
-  <input type="text" id="search" placeholder="Search for a language...">
-  <div id="list"></div>
+  <h1>Infinite Typing Machine ✨</h1>
+  <input type="text" id="inputBox" placeholder="Type anything here..." autofocus>
+  <div id="story"></div>
 
   <script>
-    // List of languages and how to say "Hello"
-    const greetings = [
-      { language: "English", hello: "Hello" },
-      { language: "Spanish", hello: "Hola" },
-      { language: "French", hello: "Bonjour" },
-      { language: "German", hello: "Hallo" },
-      { language: "Italian", hello: "Ciao" },
-      { language: "Japanese", hello: "こんにちは (Konnichiwa)" },
-      { language: "Chinese (Mandarin)", hello: "你好 (Nǐ hǎo)" },
-      { language: "Korean", hello: "안녕하세요 (Annyeonghaseyo)" },
-      { language: "Russian", hello: "Здравствуйте (Zdravstvuyte)" },
-      { language: "Arabic", hello: "مرحبا (Marhaba)" },
-      { language: "Hindi", hello: "नमस्ते (Namaste)" },
-      { language: "Swahili", hello: "Habari" },
-      { language: "Greek", hello: "Γειά σου (Geiá sou)" },
-      { language: "Turkish", hello: "Merhaba" },
-      { language: "Finnish", hello: "Hei" },
-      { language: "Hebrew", hello: "שלום (Shalom)" },
-      { language: "Thai", hello: "สวัสดี (Sawasdee)" },
-      { language: "Vietnamese", hello: "Xin chào" },
-      { language: "Polish", hello: "Cześć" },
-      { language: "Dutch", hello: "Hallo" },
-      { language: "Portuguese", hello: "Olá" },
-      { language: "Swedish", hello: "Hej" },
-      { language: "Norwegian", hello: "Hei" },
-      { language: "Danish", hello: "Hej" },
-      { language: "Zulu", hello: "Sawubona" },
-      { language: "Icelandic", hello: "Halló" },
-      { language: "Esperanto", hello: "Saluton" }
+    const inputBox = document.getElementById("inputBox");
+    const story = document.getElementById("story");
+
+    // Some random words/phrases to generate chaos
+    const randomAdditions = [
+      " suddenly felt a strange vibration.", 
+      " a mysterious cat appeared out of nowhere.", 
+      " the sky turned neon pink.", 
+      " aliens were cheering in the distance.", 
+      " time itself froze for a moment.", 
+      " everything smelled like bubblegum.", 
+      " and then gravity reversed for 3 seconds.", 
+      " a tiny unicorn sneezed glitter.", 
+      " a random thought about pizza came.", 
+      " someone shouted 'BANANA!'", 
+      " the clouds formed a smiley face.", 
+      " a portal to another dimension opened.", 
+      " pixels started raining down."
     ];
 
-    // Shuffle the greetings
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+    // Function to add random chaos
+    function addRandomChaos() {
+      const randomIndex = Math.floor(Math.random() * randomAdditions.length);
+      story.textContent += randomAdditions[randomIndex] + "\n";
+      story.scrollTop = story.scrollHeight; // auto-scroll
+    }
+
+    // When user types, add their text + random chaos
+    inputBox.addEventListener("input", (e) => {
+      const userText = e.target.value;
+      if (userText.length > 0) {
+        story.textContent += userText + " ";
+        addRandomChaos();
+        e.target.value = ""; // clear input
       }
-    }
-
-    shuffle(greetings);
-
-    const list = document.getElementById("list");
-
-    function renderList(filter = "") {
-      list.innerHTML = "";
-      greetings.forEach(g => {
-        if (g.language.toLowerCase().includes(filter.toLowerCase())) {
-          const div = document.createElement("div");
-          div.className = "item";
-          div.innerHTML = `<span class="language">${g.language}:</span> <span class="hello">${g.hello}</span>`;
-          list.appendChild(div);
-        }
-      });
-    }
-
-    renderList();
-
-    const search = document.getElementById("search");
-    search.addEventListener("input", (e) => {
-      renderList(e.target.value);
     });
   </script>
 </body>
