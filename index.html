@@ -3,47 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pawnder 🐾</title>
+<title>Pawnder 🐾 Deluxe</title>
 <style>
   body {
     font-family: Arial, sans-serif;
     background: #fef6e4;
+    margin: 0;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 0;
-    padding: 20px;
   }
-
   h1 { color: #ff6f61; }
-
-  .section { margin-bottom: 30px; width: 90%; max-width: 500px; }
-
-  input, textarea, select, button {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    font-size: 16px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-  }
-
+  .section { width: 90%; max-width: 500px; margin-bottom: 30px; }
+  input, textarea, select, button { width: 100%; padding: 10px; margin-top: 5px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
   button { background: #ff6f61; color: white; border: none; cursor: pointer; }
   button:hover { background: #ff4f41; }
 
-  #profileCard, #chatBox {
-    border: 2px solid #ff6f61;
-    border-radius: 10px;
-    padding: 15px;
-    background: white;
-  }
+  #swipeCards { position: relative; width: 100%; height: 400px; }
+  .card { position: absolute; width: 100%; height: 100%; border-radius: 10px; overflow: hidden; background: white; border: 2px solid #ff6f61; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: transform 0.3s ease, opacity 0.3s ease; }
+  .card img { width: 100%; height: 60%; object-fit: cover; }
+  .card h3 { margin: 10px 0 5px; color: #ff6f61; }
+  .card p { padding: 0 10px; text-align: center; }
 
-  #profileCard img {
-    width: 100%;
-    border-radius: 10px;
-  }
-
+  #chatSection { display: none; }
+  #chatBox { height: 300px; overflow-y: auto; border: 2px solid #ff6f61; border-radius: 10px; padding: 10px; background: white; margin-bottom: 10px; }
   .chatMessage { margin: 5px 0; }
   .bot { color: #ff6f61; }
   .user { color: #0074D9; text-align: right; }
@@ -51,102 +35,127 @@
 </head>
 <body>
 
-<h1>Pawnder 🐾</h1>
+<h1>Pawnder 🐾 Deluxe</h1>
 
 <div class="section" id="createProfileSection">
   <h2>Create Your Dog Profile</h2>
   <input type="text" id="dogName" placeholder="Dog's Name">
   <textarea id="dogDescription" placeholder="Describe your dog..."></textarea>
-  <select id="dogImage">
-    <option value="https://placedog.net/400/300?id=1">Dog 1</option>
-    <option value="https://placedog.net/400/300?id=2">Dog 2</option>
-    <option value="https://placedog.net/400/300?id=3">Dog 3</option>
-    <option value="https://placedog.net/400/300?id=4">Dog 4</option>
-    <option value="https://placedog.net/400/300?id=5">Dog 5</option>
-  </select>
+  <select id="dogImage"></select>
   <button id="createProfileBtn">Create Profile</button>
 </div>
 
-<div class="section" id="profileSection" style="display:none;">
-  <h2>Dog Profiles</h2>
-  <div id="profileCard"></div>
-  <button id="nextProfileBtn">Next Dog 🐾</button>
-  <button id="chatBtn">Chat 🐶</button>
+<div class="section" id="swipeSection" style="display:none;">
+  <h2>Swipe Dogs 🐶</h2>
+  <div id="swipeCards"></div>
+  <button id="chatBtn">Chat With This Dog</button>
 </div>
 
-<div class="section" id="chatSection" style="display:none;">
+<div class="section" id="chatSection">
   <h2>Chat</h2>
-  <div id="chatBox" style="height:300px; overflow-y:auto;"></div>
+  <div id="chatBox"></div>
   <input type="text" id="chatInput" placeholder="Type a message...">
   <button id="sendBtn">Send</button>
+  <button id="backBtn">Back to Swiping</button>
 </div>
 
 <script>
   // ----- User Profile -----
   let userProfile = {};
+  const dogImages = [];
+  for(let i=1;i<=20;i++) dogImages.push(`https://placedog.net/400/300?id=${i}`);
+
+  const dogImageSelect = document.getElementById('dogImage');
+  dogImages.forEach((img, i) => {
+    const option = document.createElement('option');
+    option.value = img;
+    option.textContent = `Dog ${i+1}`;
+    dogImageSelect.appendChild(option);
+  });
+
   document.getElementById('createProfileBtn').addEventListener('click', () => {
     const name = document.getElementById('dogName').value;
     const desc = document.getElementById('dogDescription').value;
     const img = document.getElementById('dogImage').value;
-
     if (!name || !desc) { alert('Please fill all fields!'); return; }
-
     userProfile = { name, desc, img };
     document.getElementById('createProfileSection').style.display = 'none';
-    document.getElementById('profileSection').style.display = 'block';
-    showProfile();
+    document.getElementById('swipeSection').style.display = 'block';
+    generateSwipeCards();
   });
 
-  // ----- Bot Dog Profiles -----
-  const botDogs = [
-    { name: 'Buddy', desc: 'Loves long walks and bacon.', img: 'https://placedog.net/400/300?id=6', messages: ['Woof! Nice to meet you!', 'Do you like chasing squirrels?', 'Let\'s play fetch!'] },
-    { name: 'Luna', desc: 'Professional napper.', img: 'https://placedog.net/400/300?id=7', messages: ['Hi there! How do you like belly rubs?', 'Do you enjoy treats?', 'I love sniffing new places!'] },
-    { name: 'Max', desc: 'Loves water and puddles.', img: 'https://placedog.net/400/300?id=8', messages: ['Hey! Do you swim?', 'I bark at the mailman!', 'Wanna play tug-of-war?'] },
-    { name: 'Daisy', desc: 'Chases her tail for fun.', img: 'https://placedog.net/400/300?id=9', messages: ['Hello friend!', 'Do you chase anything?', 'I like rolling in grass!'] }
-  ];
-
-  let currentBotIndex = 0;
-
-  function showProfile() {
-    const bot = botDogs[currentBotIndex];
-    const card = document.getElementById('profileCard');
-    card.innerHTML = `<img src="${bot.img}" alt="${bot.name}"><h3>${bot.name}</h3><p>${bot.desc}</p>`;
+  // ----- Bot Dogs -----
+  const botDogs = [];
+  for(let i=0;i<15;i++){
+    botDogs.push({
+      name: `Doggo ${i+1}`,
+      desc: ['Loves belly rubs','Chases squirrels','Enjoys naps','Barks at the mailman','Eats snacks constantly'][Math.floor(Math.random()*5)],
+      img: dogImages[Math.floor(Math.random()*dogImages.length)],
+      messages: ['Woof!','Bark bark!','Sniff sniff','Wanna play?','I love treats!']
+    });
   }
 
-  document.getElementById('nextProfileBtn').addEventListener('click', () => {
-    currentBotIndex = (currentBotIndex + 1) % botDogs.length;
-    showProfile();
-  });
+  // ----- Swipe Cards -----
+  const swipeCards = document.getElementById('swipeCards');
+  let currentCardIndex = 0;
 
-  document.getElementById('chatBtn').addEventListener('click', () => {
-    document.getElementById('profileSection').style.display = 'none';
-    document.getElementById('chatSection').style.display = 'block';
-    const chatBox = document.getElementById('chatBox');
-    chatBox.innerHTML = `<div class="chatMessage bot">${botDogs[currentBotIndex].name}: Hi ${userProfile.name}! 🐶</div>`;
-  });
+  function generateSwipeCards() {
+    swipeCards.innerHTML = '';
+    botDogs.forEach((dog, index) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<img src="${dog.img}"><h3>${dog.name}</h3><p>${dog.desc}</p>`;
+      card.style.zIndex = botDogs.length - index;
+      swipeCards.appendChild(card);
+    });
+  }
+
+  function swipeCard() {
+    const cards = document.querySelectorAll('.card');
+    if(currentCardIndex >= cards.length) currentCardIndex = 0;
+    const card = cards[currentCardIndex];
+    card.style.transform = 'translateX(500px) rotate(20deg)';
+    card.style.opacity = '0';
+    currentCardIndex++;
+  }
+
+  swipeCards.addEventListener('click', swipeCard);
 
   // ----- Chat -----
+  let activeBot = null;
+  const chatBox = document.getElementById('chatBox');
+
+  document.getElementById('chatBtn').addEventListener('click', () => {
+    const cards = document.querySelectorAll('.card');
+    activeBot = botDogs[currentCardIndex-1 >=0 ? currentCardIndex-1:0];
+    document.getElementById('swipeSection').style.display = 'none';
+    document.getElementById('chatSection').style.display = 'block';
+    chatBox.innerHTML = `<div class="chatMessage bot">${activeBot.name}: Hi ${userProfile.name}! 🐶</div>`;
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+
   document.getElementById('sendBtn').addEventListener('click', sendMessage);
-  document.getElementById('chatInput').addEventListener('keydown', (e) => { if (e.key==='Enter') sendMessage(); });
+  document.getElementById('chatInput').addEventListener('keydown', (e)=>{if(e.key==='Enter') sendMessage();});
 
   function sendMessage() {
     const input = document.getElementById('chatInput');
     const msg = input.value.trim();
-    if (!msg) return;
-    const chatBox = document.getElementById('chatBox');
+    if(!msg) return;
     chatBox.innerHTML += `<div class="chatMessage user">${userProfile.name}: ${msg}</div>`;
-    input.value = '';
+    input.value='';
     chatBox.scrollTop = chatBox.scrollHeight;
-
-    // Bot reply after a short delay
     setTimeout(() => {
-      const bot = botDogs[currentBotIndex];
-      const botMsg = bot.messages[Math.floor(Math.random() * bot.messages.length)];
-      chatBox.innerHTML += `<div class="chatMessage bot">${bot.name}: ${botMsg}</div>`;
+      const botMsg = activeBot.messages[Math.floor(Math.random()*activeBot.messages.length)];
+      chatBox.innerHTML += `<div class="chatMessage bot">${activeBot.name}: ${botMsg}</div>`;
       chatBox.scrollTop = chatBox.scrollHeight;
     }, 1000);
   }
-</script>
 
+  document.getElementById('backBtn').addEventListener('click', ()=>{
+    document.getElementById('chatSection').style.display='none';
+    document.getElementById('swipeSection').style.display='block';
+  });
+
+</script>
 </body>
 </html>
