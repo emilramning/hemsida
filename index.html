@@ -1,94 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Infinite Typing Machine ✨</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Courier New', Courier, monospace;
-      background: #111;
-      color: #0f0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pawnder 🐾</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #fef6e4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+  }
 
-    h1 {
-      text-align: center;
-      color: #0f0;
-    }
+  h1 { color: #ff6f61; }
 
-    #inputBox {
-      width: 90%;
-      max-width: 600px;
-      padding: 10px;
-      font-size: 18px;
-      background: #222;
-      border: 2px solid #0f0;
-      border-radius: 5px;
-      color: #0f0;
-      margin-bottom: 20px;
-    }
+  .section { margin-bottom: 30px; width: 90%; max-width: 500px; }
 
-    #story {
-      width: 90%;
-      max-width: 800px;
-      height: 60vh;
-      background: #111;
-      border: 2px solid #0f0;
-      border-radius: 5px;
-      padding: 15px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      line-height: 1.5;
-    }
-  </style>
+  input, textarea, select, button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+  }
+
+  button { background: #ff6f61; color: white; border: none; cursor: pointer; }
+  button:hover { background: #ff4f41; }
+
+  #profileCard, #chatBox {
+    border: 2px solid #ff6f61;
+    border-radius: 10px;
+    padding: 15px;
+    background: white;
+  }
+
+  #profileCard img {
+    width: 100%;
+    border-radius: 10px;
+  }
+
+  .chatMessage { margin: 5px 0; }
+  .bot { color: #ff6f61; }
+  .user { color: #0074D9; text-align: right; }
+</style>
 </head>
 <body>
-  <h1>Infinite Typing Machine ✨</h1>
-  <input type="text" id="inputBox" placeholder="Type anything here..." autofocus>
-  <div id="story"></div>
 
-  <script>
-    const inputBox = document.getElementById("inputBox");
-    const story = document.getElementById("story");
+<h1>Pawnder 🐾</h1>
 
-    // Some random words/phrases to generate chaos
-    const randomAdditions = [
-      " suddenly felt a strange vibration.", 
-      " a mysterious cat appeared out of nowhere.", 
-      " the sky turned neon pink.", 
-      " aliens were cheering in the distance.", 
-      " time itself froze for a moment.", 
-      " everything smelled like bubblegum.", 
-      " and then gravity reversed for 3 seconds.", 
-      " a tiny unicorn sneezed glitter.", 
-      " a random thought about pizza came.", 
-      " someone shouted 'BANANA!'", 
-      " the clouds formed a smiley face.", 
-      " a portal to another dimension opened.", 
-      " pixels started raining down."
-    ];
+<div class="section" id="createProfileSection">
+  <h2>Create Your Dog Profile</h2>
+  <input type="text" id="dogName" placeholder="Dog's Name">
+  <textarea id="dogDescription" placeholder="Describe your dog..."></textarea>
+  <select id="dogImage">
+    <option value="https://placedog.net/400/300?id=1">Dog 1</option>
+    <option value="https://placedog.net/400/300?id=2">Dog 2</option>
+    <option value="https://placedog.net/400/300?id=3">Dog 3</option>
+    <option value="https://placedog.net/400/300?id=4">Dog 4</option>
+    <option value="https://placedog.net/400/300?id=5">Dog 5</option>
+  </select>
+  <button id="createProfileBtn">Create Profile</button>
+</div>
 
-    // Function to add random chaos
-    function addRandomChaos() {
-      const randomIndex = Math.floor(Math.random() * randomAdditions.length);
-      story.textContent += randomAdditions[randomIndex] + "\n";
-      story.scrollTop = story.scrollHeight; // auto-scroll
-    }
+<div class="section" id="profileSection" style="display:none;">
+  <h2>Dog Profiles</h2>
+  <div id="profileCard"></div>
+  <button id="nextProfileBtn">Next Dog 🐾</button>
+  <button id="chatBtn">Chat 🐶</button>
+</div>
 
-    // When user types, add their text + random chaos
-    inputBox.addEventListener("input", (e) => {
-      const userText = e.target.value;
-      if (userText.length > 0) {
-        story.textContent += userText + " ";
-        addRandomChaos();
-        e.target.value = ""; // clear input
-      }
-    });
-  </script>
+<div class="section" id="chatSection" style="display:none;">
+  <h2>Chat</h2>
+  <div id="chatBox" style="height:300px; overflow-y:auto;"></div>
+  <input type="text" id="chatInput" placeholder="Type a message...">
+  <button id="sendBtn">Send</button>
+</div>
+
+<script>
+  // ----- User Profile -----
+  let userProfile = {};
+  document.getElementById('createProfileBtn').addEventListener('click', () => {
+    const name = document.getElementById('dogName').value;
+    const desc = document.getElementById('dogDescription').value;
+    const img = document.getElementById('dogImage').value;
+
+    if (!name || !desc) { alert('Please fill all fields!'); return; }
+
+    userProfile = { name, desc, img };
+    document.getElementById('createProfileSection').style.display = 'none';
+    document.getElementById('profileSection').style.display = 'block';
+    showProfile();
+  });
+
+  // ----- Bot Dog Profiles -----
+  const botDogs = [
+    { name: 'Buddy', desc: 'Loves long walks and bacon.', img: 'https://placedog.net/400/300?id=6', messages: ['Woof! Nice to meet you!', 'Do you like chasing squirrels?', 'Let\'s play fetch!'] },
+    { name: 'Luna', desc: 'Professional napper.', img: 'https://placedog.net/400/300?id=7', messages: ['Hi there! How do you like belly rubs?', 'Do you enjoy treats?', 'I love sniffing new places!'] },
+    { name: 'Max', desc: 'Loves water and puddles.', img: 'https://placedog.net/400/300?id=8', messages: ['Hey! Do you swim?', 'I bark at the mailman!', 'Wanna play tug-of-war?'] },
+    { name: 'Daisy', desc: 'Chases her tail for fun.', img: 'https://placedog.net/400/300?id=9', messages: ['Hello friend!', 'Do you chase anything?', 'I like rolling in grass!'] }
+  ];
+
+  let currentBotIndex = 0;
+
+  function showProfile() {
+    const bot = botDogs[currentBotIndex];
+    const card = document.getElementById('profileCard');
+    card.innerHTML = `<img src="${bot.img}" alt="${bot.name}"><h3>${bot.name}</h3><p>${bot.desc}</p>`;
+  }
+
+  document.getElementById('nextProfileBtn').addEventListener('click', () => {
+    currentBotIndex = (currentBotIndex + 1) % botDogs.length;
+    showProfile();
+  });
+
+  document.getElementById('chatBtn').addEventListener('click', () => {
+    document.getElementById('profileSection').style.display = 'none';
+    document.getElementById('chatSection').style.display = 'block';
+    const chatBox = document.getElementById('chatBox');
+    chatBox.innerHTML = `<div class="chatMessage bot">${botDogs[currentBotIndex].name}: Hi ${userProfile.name}! 🐶</div>`;
+  });
+
+  // ----- Chat -----
+  document.getElementById('sendBtn').addEventListener('click', sendMessage);
+  document.getElementById('chatInput').addEventListener('keydown', (e) => { if (e.key==='Enter') sendMessage(); });
+
+  function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    const chatBox = document.getElementById('chatBox');
+    chatBox.innerHTML += `<div class="chatMessage user">${userProfile.name}: ${msg}</div>`;
+    input.value = '';
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // Bot reply after a short delay
+    setTimeout(() => {
+      const bot = botDogs[currentBotIndex];
+      const botMsg = bot.messages[Math.floor(Math.random() * bot.messages.length)];
+      chatBox.innerHTML += `<div class="chatMessage bot">${bot.name}: ${botMsg}</div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }, 1000);
+  }
+</script>
+
 </body>
 </html>
