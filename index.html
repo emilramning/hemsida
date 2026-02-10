@@ -3,61 +3,130 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>World Avg. Temperature 🌍</title>
+  <title>Hello in Every Language 🌍</title>
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
+      background: #f5f5f5;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
-      height: 100vh;
-      background: linear-gradient(135deg, #001f3f, #0074D9);
-      color: white;
+      padding: 20px;
+    }
+
+    h1 {
       text-align: center;
+      color: #333;
     }
-    #temp {
-      font-size: 64px;
+
+    #search {
+      padding: 10px;
+      width: 300px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    #list {
+      max-width: 500px;
+      width: 100%;
+      height: 60vh;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background: white;
+      padding: 10px;
+    }
+
+    .item {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+      transition: background 0.2s;
+    }
+
+    .item:hover {
+      background: #f0f0f0;
+    }
+
+    .language {
       font-weight: bold;
-      margin: 20px;
-      animation: glow 2s infinite ease-in-out;
+      margin-right: 10px;
     }
-    @keyframes glow {
-      0%, 100% { text-shadow: 0 0 10px #fff, 0 0 30px #ff4136; }
-      50% { text-shadow: 0 0 20px #ff4136, 0 0 40px #fff; }
-    }
-    #label {
-      font-size: 24px;
+
+    .hello {
+      color: #0074D9;
     }
   </style>
 </head>
 <body>
-  <div id="label">Current estimated world average surface temp:</div>
-  <div id="temp">Loading...</div>
+  <h1>"Hello" in Every Language 🌍</h1>
+  <input type="text" id="search" placeholder="Search for a language...">
+  <div id="list"></div>
 
   <script>
-    const tempElem = document.getElementById("temp");
+    // List of languages and how to say "Hello"
+    const greetings = [
+      { language: "English", hello: "Hello" },
+      { language: "Spanish", hello: "Hola" },
+      { language: "French", hello: "Bonjour" },
+      { language: "German", hello: "Hallo" },
+      { language: "Italian", hello: "Ciao" },
+      { language: "Japanese", hello: "こんにちは (Konnichiwa)" },
+      { language: "Chinese (Mandarin)", hello: "你好 (Nǐ hǎo)" },
+      { language: "Korean", hello: "안녕하세요 (Annyeonghaseyo)" },
+      { language: "Russian", hello: "Здравствуйте (Zdravstvuyte)" },
+      { language: "Arabic", hello: "مرحبا (Marhaba)" },
+      { language: "Hindi", hello: "नमस्ते (Namaste)" },
+      { language: "Swahili", hello: "Habari" },
+      { language: "Greek", hello: "Γειά σου (Geiá sou)" },
+      { language: "Turkish", hello: "Merhaba" },
+      { language: "Finnish", hello: "Hei" },
+      { language: "Hebrew", hello: "שלום (Shalom)" },
+      { language: "Thai", hello: "สวัสดี (Sawasdee)" },
+      { language: "Vietnamese", hello: "Xin chào" },
+      { language: "Polish", hello: "Cześć" },
+      { language: "Dutch", hello: "Hallo" },
+      { language: "Portuguese", hello: "Olá" },
+      { language: "Swedish", hello: "Hej" },
+      { language: "Norwegian", hello: "Hei" },
+      { language: "Danish", hello: "Hej" },
+      { language: "Zulu", hello: "Sawubona" },
+      { language: "Icelandic", hello: "Halló" },
+      { language: "Esperanto", hello: "Saluton" }
+    ];
 
-    // Starting with a realistic baseline
-    let currentTemp = 15.0;
-
-    // Slowly animate temp up (tiny increments)
-    function updateCounter() {
-      currentTemp += 0.0001; // tiny increase to simulate warming
-      tempElem.textContent = currentTemp.toFixed(2) + "°C";
+    // Shuffle the greetings
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
     }
 
-    setInterval(updateCounter, 1000);
+    shuffle(greetings);
 
-    // NOTE: In a real project, you would fetch
-    // updated data from an API like this:
-    // fetch("https://temperature.global/api/current")
-    //   .then(res => res.json())
-    //   .then(data => {
-    //     currentTemp = parseFloat(data.currentTemp);
-    //   });
+    const list = document.getElementById("list");
 
+    function renderList(filter = "") {
+      list.innerHTML = "";
+      greetings.forEach(g => {
+        if (g.language.toLowerCase().includes(filter.toLowerCase())) {
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `<span class="language">${g.language}:</span> <span class="hello">${g.hello}</span>`;
+          list.appendChild(div);
+        }
+      });
+    }
+
+    renderList();
+
+    const search = document.getElementById("search");
+    search.addEventListener("input", (e) => {
+      renderList(e.target.value);
+    });
   </script>
 </body>
 </html>
