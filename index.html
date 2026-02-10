@@ -1,298 +1,87 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Sandbox Simulator</title>
-<style>
-html, body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background: black;
-  font-family: sans-serif;
-  color: white;
-}
-#ui {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0,0,0,0.5);
-  padding: 10px;
-  border-radius: 10px;
-  z-index: 10;
-}
-button, input[type=range], select {
-  margin: 5px 0;
-  cursor: pointer;
-}
-button.active {
-  background: #1b3558;
-  color: white;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiny Skill Game</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #1a1a1a;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #game-area {
+      position: relative;
+      width: 90vw;
+      height: 80vh;
+      background: #222;
+      border: 3px solid #fff;
+      border-radius: 10px;
+    }
+
+    #dot {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background: #ff4081;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 24px;
+    }
+  </style>
 </head>
 <body>
+  <div id="game-area">
+    <div id="score">Score: 0</div>
+    <div id="dot"></div>
+  </div>
 
-<canvas id="c"></canvas>
+  <script>
+    const dot = document.getElementById('dot');
+    const gameArea = document.getElementById('game-area');
+    const scoreDisplay = document.getElementById('score');
 
-<div id="ui">
-  <button data-type="planet">Planet</button>
-  <button data-type="blackhole">Black Hole</button>
-  <button id="reset">Reset</button><br>
-  Gravitation: <input type="range" min="0" max="1" step="0.01" id="gravSlider" value="0.25"><br>
-  Planet-typ: 
-  <select id="planetType">
-    <option value="normal">Normal</option>
-    <option value="lava">Lava</option>
-    <option value="gas">Gas</option>
-    <option value="ice">Ice</option>
-  </select>
-</div>
+    let score = 0;
 
-<script>
-console.log("SELECTIVE GRAVITY LOADED");
+    function moveDot() {
+      const maxX = gameArea.clientWidth - dot.clientWidth;
+      const maxY = gameArea.clientHeight - dot.clientHeight;
 
-const c = document.getElementById("c");
-const ctx = c.getContext("2d");
-c.width = innerWidth;
-c.height = innerHeight;
+      const randomX = Math.floor(Math.random() * maxX);
+      const randomY = Math.floor(Math.random() * maxY);
 
-let mode = null;
-let G = parseFloat(document.getElementById("gravSlider").value);
-let shake = 0;
+      dot.style.left = randomX + 'px';
+      dot.style.top = randomY + 'px';
+      dot.style.background = `hsl(${Math.random() * 360}, 70%, 50%)`;
+    }
 
-const stars = [];
-const planets = [];
-const blackholes = [];
-const rockets = [];
-const particles = [];
-const meteors = [];
-
-ctx.imageSmoothingEnabled = true;
-
-// ===== BAS-KLASS =====
-class Body {
-  constructor(x, y, mass){
-    this.x = x; this.y = y;
-    this.vx = 0; this.vy = 0;
-    this.mass = mass;
-  }
-  pullFrom(bh){
-    const dx = bh.x - this.x;
-    const dy = bh.y - this.y;
-    const d = Math.sqrt(dx*dx + dy*dy) + 0.5;
-    const f = G * bh.mass / (d*d);
-    this.vx += dx/d * f;
-    this.vy += dy/d * f;
-  }
-  update(){ this.x += this.vx; this.y += this.vy; }
-}
-
-// ===== STAR =====
-class Star extends Body {
-  constructor(){
-    super(Math.random()*c.width, Math.random()*c.height,1);
-    this.size = Math.random()*1.5+0.5;
-    this.color = ["#fff", "#ffea00", "#9fdfff"][Math.floor(Math.random()*3)];
-  }
-  draw(){
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
-    ctx.fill();
-  }
-}
-
-// ===== PARTICLE =====
-class Particle{
-  constructor(x,y,color){
-    this.x=x; this.y=y;
-    this.vx=(Math.random()-0.5)*4;
-    this.vy=(Math.random()-0.5)*4;
-    this.life=30;
-    this.color=color;
-  }
-  update(){ this.x+=this.vx; this.y+=this.vy; this.life--; }
-  draw(){
-    ctx.fillStyle=this.color;
-    ctx.globalAlpha = this.life/30;
-    ctx.fillRect(this.x,this.y,2,2);
-    ctx.globalAlpha=1;
-  }
-}
-
-// ===== PLANET =====
-class Planet extends Body{
-  constructor(x,y,type="normal"){
-    super(x,y,600);
-    this.type = type;
-    this.r = 10 + Math.random()*20;
-    this.trail = [];
-    this.angle = Math.random()*Math.PI*2;
-    const colorMap = {
-      normal: [["#7fd4ff","#1b3558"]],
-      lava: [["#ff4d4d","#7f0000"]],
-      gas: [["#a0ffa0","#0b3d0b"]],
-      ice: [["#99ccff","#003366"]]
-    };
-    this.col = colorMap[type][0];
-  }
-  update(){
-    blackholes.forEach(bh=>this.pullFrom(bh));
-    super.update();
-
-    this.trail.push({x:this.x,y:this.y});
-    if(this.trail.length>20) this.trail.shift();
-
-    blackholes.forEach(bh=>{
-      const dx = bh.x-this.x;
-      const dy = bh.y-this.y;
-      if(Math.sqrt(dx*dx + dy*dy) < bh.r){
-        for(let i=0;i<40;i++) particles.push(new Particle(this.x,this.y,this.col[0]));
-        shake=10;
-        planets.splice(planets.indexOf(this),1);
-      }
+    dot.addEventListener('click', () => {
+      score++;
+      scoreDisplay.textContent = 'Score: ' + score;
+      moveDot();
     });
-  }
-  draw(){
-    ctx.strokeStyle = "rgba(127,212,255,0.4)";
-    ctx.beginPath();
-    this.trail.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
-    ctx.stroke();
 
-    const g = ctx.createRadialGradient(this.x+Math.cos(this.angle)*2,this.y+Math.sin(this.angle)*2,this.r*0.2,this.x,this.y,this.r);
-    g.addColorStop(0,this.col[0]);
-    g.addColorStop(1,this.col[1]);
-    ctx.fillStyle=g;
-    ctx.beginPath();
-    ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-    ctx.fill();
+    // Move dot every 2 seconds automatically
+    setInterval(moveDot, 2000);
 
-    ctx.strokeStyle=this.col[0];
-    ctx.globalAlpha=0.2;
-    ctx.lineWidth=4;
-    ctx.beginPath();
-    ctx.arc(this.x,this.y,this.r+4,0,Math.PI*2);
-    ctx.stroke();
-    ctx.globalAlpha=1;
-  }
-}
-
-// ===== BLACK HOLE =====
-class BlackHole{
-  constructor(x,y){ this.x=x; this.y=y; this.mass=3000; this.r=35; this.t=0; }
-  draw(){
-    this.t+=0.05;
-    ctx.fillStyle="black";
-    ctx.beginPath();
-    ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-    ctx.fill();
-    ctx.strokeStyle = `rgba(255,255,255,${0.25+Math.sin(this.t)*0.2})`;
-    ctx.lineWidth=3;
-    ctx.beginPath();
-    ctx.arc(this.x,this.y,this.r+10+Math.sin(this.t)*4,0,Math.PI*2);
-    ctx.stroke();
-
-    // suck effect på particles
-    particles.forEach(p=>{
-      const dx=this.x-p.x;
-      const dy=this.y-p.y;
-      const dist=Math.sqrt(dx*dx+dy*dy);
-      if(dist<50){ p.vx += dx/dist*0.1; p.vy += dy/dist*0.1; }
-    });
-  }
-}
-
-// ===== ROCKET =====
-class Rocket extends Body{
-  constructor(){ super(-100,Math.random()*c.height,200); this.vx=2; this.trail=[]; }
-  update(){
-    blackholes.forEach(bh=>this.pullFrom(bh));
-    super.update();
-    this.trail.push({x:this.x,y:this.y});
-    if(this.trail.length>15) this.trail.shift();
-    particles.push(new Particle(this.x-10,this.y+3,"orange"));
-    if(this.x>c.width+200){ this.x=-200; this.y=Math.random()*c.height; this.vx=2; this.vy=0; this.trail=[]; }
-  }
-  draw(){
-    ctx.strokeStyle="orange";
-    ctx.beginPath();
-    this.trail.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
-    ctx.stroke();
-    ctx.fillStyle="white";
-    ctx.fillRect(this.x,this.y,30,6);
-  }
-}
-
-// ===== METEOR =====
-class Meteor{
-  constructor(){
-    this.x=Math.random()*c.width;
-    this.y=-10;
-    this.vx=(Math.random()-0.5)*2;
-    this.vy=Math.random()*4+2;
-    this.size=Math.random()*2+1;
-  }
-  update(){ this.x+=this.vx; this.y+=this.vy; if(this.y>c.height) this.reset(); }
-  reset(){ this.x=Math.random()*c.width; this.y=-10; this.vx=(Math.random()-0.5)*2; this.vy=Math.random()*4+2; }
-  draw(){ ctx.fillStyle="white"; ctx.fillRect(this.x,this.y,this.size,this.size); }
-}
-
-// ===== INIT STJÄRNOR =====
-function initStars(){stars.length=0;for(let i=0;i<1000;i++) stars.push(new Star());}
-initStars();
-rockets.push(new Rocket());
-for(let i=0;i<15;i++) meteors.push(new Meteor());
-
-// ===== MENU =====
-document.querySelectorAll("button[data-type]").forEach(b=>{
-  b.onclick=e=>{
-    document.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
-    b.classList.add("active");
-    mode=b.dataset.type;
-    e.stopPropagation();
-  };
-});
-document.getElementById("reset").onclick=e=>{
-  planets.length=0; blackholes.length=0; particles.length=0; mode=null;
-  document.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
-  initStars();
-  e.stopPropagation();
-};
-document.getElementById("gravSlider").oninput=e=>G=parseFloat(e.target.value);
-
-c.onclick=e=>{
-  if(e.clientX<220 && e.clientY<150) return;
-  const typeSelect = document.getElementById("planetType");
-  const pType = typeSelect.value;
-  if(mode==="planet") planets.push(new Planet(e.clientX,e.clientY,pType));
-  if(mode==="blackhole") blackholes.push(new BlackHole(e.clientX,e.clientY));
-};
-
-// ===== LOOP =====
-function loop(){
-  ctx.save();
-  if(shake){ ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake); shake--; }
-
-  ctx.fillStyle="rgba(0,0,0,0.3)";
-  ctx.fillRect(0,0,c.width,c.height);
-
-  stars.forEach(s=>{ blackholes.forEach(bh=>s.pullFrom(bh)); s.update(); s.draw(); });
-  meteors.forEach(m=>{ m.update(); m.draw(); });
-  planets.forEach(p=>{ p.update(); p.draw(); });
-  rockets.forEach(r=>{ r.update(); r.draw(); });
-  blackholes.forEach(b=>b.draw());
-  particles.forEach((p,i)=>{ p.update(); p.draw(); if(p.life<=0) particles.splice(i,1); });
-
-  ctx.restore();
-  requestAnimationFrame(loop);
-}
-loop();
-
-// ===== RESIZE =====
-window.addEventListener("resize",()=>{ c.width=innerWidth; c.height=innerHeight; });
-
-</script>
+    // Initial position
+    moveDot();
+  </script>
 </body>
 </html>
