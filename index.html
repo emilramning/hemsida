@@ -5,31 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Space Sandbox Simulator</title>
 <style>
-  body, html {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background: black;
-    font-family: sans-serif;
-    color: white;
-  }
-  #ui {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(0,0,0,0.5);
-    padding: 10px;
-    border-radius: 10px;
-    z-index: 10;
-  }
-  button, input[type=range] {
-    margin: 5px 0;
-    cursor: pointer;
-  }
-  button.active {
-    background: #1b3558;
-    color: white;
-  }
+html,body{
+  margin:0;
+  padding:0;
+  overflow:hidden;
+  background:black;
+  font-family:sans-serif;
+  color:white;
+}
+#ui{
+  position:absolute;
+  top:10px;
+  left:10px;
+  background:rgba(0,0,0,0.5);
+  padding:10px;
+  border-radius:10px;
+  z-index:10;
+}
+button,input{margin:5px 0;cursor:pointer}
+button.active{background:#1b3558;color:white}
 </style>
 </head>
 <body>
@@ -40,54 +34,43 @@
   <button data-type="planet">Planet</button>
   <button data-type="blackhole">Black Hole</button>
   <button id="reset">Reset</button><br>
-  Gravitation: <input type="range" min="0" max="1" step="0.01" id="gravSlider" value="0.25">
+  Gravitation <input type="range" min="0" max="1" step="0.01" id="grav" value="0.25">
 </div>
 
 <script>
-console.log("SELECTIVE GRAVITY LOADED");
+const c=document.getElementById("c"),ctx=c.getContext("2d");
+c.width=innerWidth;c.height=innerHeight;
 
-const c = document.getElementById("c");
-const ctx = c.getContext("2d");
-c.width = innerWidth;
-c.height = innerHeight;
+let G=0.25,mode=null,shake=0;
+const stars=[],planets=[],blackholes=[],rockets=[],particles=[];
 
-let mode = null;
-let G = parseFloat(document.getElementById("gravSlider").value);
-
-const stars = [];
-const planets = [];
-const blackholes = [];
-const rockets = [];
-
-ctx.imageSmoothingEnabled = true;
-
-// ===== BAS-KLASS =====
-class Body {
-  constructor(x,y,mass){
-    this.x=x; this.y=y;
-    this.vx=0; this.vy=0;
-    this.mass=mass;
-  }
+// ===== BAS =====
+class Body{
+  constructor(x,y,m){this.x=x;this.y=y;this.vx=0;this.vy=0;this.mass=m}
   pullFrom(bh){
-    const dx = bh.x - this.x;
-    const dy = bh.y - this.y;
-    const d = Math.sqrt(dx*dx + dy*dy) + 0.5;
-    const f = G * bh.mass / (d*d);
-    this.vx += dx/d * f;
-    this.vy += dy/d * f;
+    const dx=bh.x-this.x,dy=bh.y-this.y;
+    const d=Math.sqrt(dx*dx+dy*dy)+0.5;
+    const f=G*bh.mass/(d*d);
+    this.vx+=dx/d*f;this.vy+=dy/d*f;
   }
-  update(){
-    this.x += this.vx;
-    this.y += this.vy;
-  }
+  update(){this.x+=this.vx;this.y+=this.vy}
 }
 
-// ===== STAR =====
+// ===== STJÄRNOR MED PARALLAX =====
 class Star extends Body{
   constructor(){
     super(Math.random()*c.width,Math.random()*c.height,1);
-    this.size=Math.random()*1.5+0.5;
-    this.color = ["#fff", "#ffea00", "#9fdfff"][Math.floor(Math.random()*3)];
+    this.z=Math.random()*3+0.5;
+    this.size=this.z;
+    this.color=["#fff","#9fdfff","#ffea00"][Math.floor(Math.random()*3)];
+  }
+  update(){
+    this.x+=this.vx/this.z;
+    this.y+=this.vy/this.z;
+    if(this.x<0)this.x=c.width;
+    if(this.y<0)this.y=c.height;
+    if(this.x>c.width)this.x=0;
+    if(this.y>c.height)this.y=0;
   }
   draw(){
     ctx.fillStyle=this.color;
@@ -97,197 +80,155 @@ class Star extends Body{
   }
 }
 
-// ===== PLANET (med slumpad färg och storlek) =====
+// ===== PARTIKLAR =====
+class Particle{
+  constructor(x,y,col){
+    this.x=x;this.y=y;
+    this.vx=(Math.random()-0.5)*4;
+    this.vy=(Math.random()-0.5)*4;
+    this.life=30;
+    this.col=col;
+  }
+  update(){this.x+=this.vx;this.y+=this.vy;this.life--}
+  draw(){
+    ctx.fillStyle=this.col;
+    ctx.globalAlpha=this.life/30;
+    ctx.fillRect(this.x,this.y,2,2);
+    ctx.globalAlpha=1;
+  }
+}
+
+// ===== PLANET =====
 class Planet extends Body{
   constructor(x,y){
     super(x,y,600);
-    this.r = 10 + Math.random()*20; // slumpad radie
-    this.trail = [];
-    // slumpad färggradient
-    const colors = [
-      ["#7fd4ff","#1b3558"],   // blå planet
-      ["#ff7f50","#8b2d00"],   // röd planet
-      ["#7fff7f","#0b3d0b"],   // grön planet
-      ["#d47fff","#3b003b"],   // lila planet
-      ["#ffd700","#8b6f00"]    // gul planet
+    this.r=10+Math.random()*20;
+    this.trail=[];
+    const cols=[
+      ["#7fd4ff","#1b3558"],
+      ["#ff7f50","#8b2d00"],
+      ["#7fff7f","#0b3d0b"],
+      ["#d47fff","#3b003b"],
+      ["#ffd700","#8b6f00"]
     ];
-    this.color = colors[Math.floor(Math.random()*colors.length)];
+    this.col=cols[Math.floor(Math.random()*cols.length)];
   }
   update(){
     blackholes.forEach(bh=>this.pullFrom(bh));
     super.update();
-    // trail
     this.trail.push({x:this.x,y:this.y});
-    if(this.trail.length>20) this.trail.shift();
-    // kolla collision med svart hål
+    if(this.trail.length>20)this.trail.shift();
     blackholes.forEach(bh=>{
-      const dx = bh.x - this.x;
-      const dy = bh.y - this.y;
-      if(Math.sqrt(dx*dx + dy*dy) < bh.r){
+      const d=Math.hypot(bh.x-this.x,bh.y-this.y);
+      if(d<bh.r){
+        for(let i=0;i<40;i++)particles.push(new Particle(this.x,this.y,this.col[0]));
+        shake=10;
         planets.splice(planets.indexOf(this),1);
       }
     });
   }
   draw(){
-    // trail
-    ctx.strokeStyle = "rgba(127,212,255,0.4)";
+    ctx.strokeStyle="rgba(150,200,255,.4)";
     ctx.beginPath();
-    for(let i=0;i<this.trail.length;i++){
-      const p=this.trail[i];
-      if(i===0) ctx.moveTo(p.x,p.y);
-      else ctx.lineTo(p.x,p.y);
-    }
+    this.trail.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
     ctx.stroke();
 
-    // planet
-    const g = ctx.createRadialGradient(this.x-6,this.y-6,4,this.x,this.y,this.r);
-    g.addColorStop(0,this.color[0]);
-    g.addColorStop(1,this.color[1]);
+    const g=ctx.createRadialGradient(this.x,this.y,this.r*0.2,this.x,this.y,this.r);
+    g.addColorStop(0,this.col[0]);
+    g.addColorStop(1,this.col[1]);
     ctx.fillStyle=g;
     ctx.beginPath();
     ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
     ctx.fill();
+
+    ctx.strokeStyle=this.col[0];
+    ctx.globalAlpha=0.2;
+    ctx.lineWidth=4;
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.r+4,0,Math.PI*2);
+    ctx.stroke();
+    ctx.globalAlpha=1;
   }
 }
 
 // ===== BLACK HOLE =====
 class BlackHole{
-  constructor(x,y){
-    this.x=x; this.y=y;
-    this.mass=3000;
-    this.r=35;
-  }
+  constructor(x,y){this.x=x;this.y=y;this.mass=3000;this.r=35;this.t=0}
   draw(){
+    this.t+=0.05;
     ctx.fillStyle="black";
     ctx.beginPath();
     ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
     ctx.fill();
 
-    ctx.strokeStyle="rgba(255,255,255,0.25)";
-    ctx.lineWidth=2;
+    ctx.strokeStyle=`rgba(255,255,255,${0.3+Math.sin(this.t)*0.2})`;
+    ctx.lineWidth=3;
     ctx.beginPath();
-    ctx.arc(this.x,this.y,this.r+10,0,Math.PI*2);
+    ctx.arc(this.x,this.y,this.r+12+Math.sin(this.t)*4,0,Math.PI*2);
     ctx.stroke();
   }
 }
 
-// ===== ROCKET =====
+// ===== RAKET =====
 class Rocket extends Body{
-  constructor(){
-    super(-100,Math.random()*c.height,200);
-    this.vx=2;
-    this.trail=[];
-  }
+  constructor(){super(-100,Math.random()*c.height,200);this.vx=2;this.trail=[]}
   update(){
     blackholes.forEach(bh=>this.pullFrom(bh));
     super.update();
-    // trail
     this.trail.push({x:this.x,y:this.y});
-    if(this.trail.length>15) this.trail.shift();
-    if(this.x>c.width+200){
-      this.x=-200;
-      this.y=Math.random()*c.height;
-      this.vx=2; this.vy=0;
-      this.trail=[];
-    }
+    if(this.trail.length>15)this.trail.shift();
+    particles.push(new Particle(this.x-10,this.y+3,"orange"));
+    if(this.x>c.width+200){this.x=-200;this.y=Math.random()*c.height;this.vx=2;this.vy=0;this.trail=[]}
   }
   draw(){
-    // trail
     ctx.strokeStyle="orange";
     ctx.beginPath();
-    for(let i=0;i<this.trail.length;i++){
-      const p=this.trail[i];
-      if(i===0) ctx.moveTo(p.x,p.y);
-      else ctx.lineTo(p.x,p.y);
-    }
+    this.trail.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
     ctx.stroke();
-
-    ctx.fillStyle="white";
-    ctx.fillRect(this.x,this.y,30,6);
-    ctx.fillStyle="orange";
-    ctx.fillRect(this.x-8,this.y+1,6,4);
+    ctx.fillStyle="white";ctx.fillRect(this.x,this.y,30,6);
   }
 }
 
-// ===== INIT FUNKTION FÖR STJÄRNOR =====
-function initStars(){
-  stars.length = 0;
-  for(let i=0;i<1000;i++){
-    stars.push(new Star());
-  }
-}
+// ===== INIT =====
+function initStars(){stars.length=0;for(let i=0;i<1000;i++)stars.push(new Star())}
+initStars();rockets.push(new Rocket());
 
-// INIT
-initStars();
-rockets.push(new Rocket());
-
-// MENU-KNAPPR
-document.querySelectorAll("button[data-type]").forEach(b => {
-  b.addEventListener("click", e => {
-    document.querySelectorAll("button").forEach(x => x.classList.remove("active"));
-    b.classList.add("active");
-    mode = b.dataset.type;
-    e.stopPropagation();
-  });
+// UI
+document.querySelectorAll("[data-type]").forEach(b=>b.onclick=e=>{
+  document.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");mode=b.dataset.type;e.stopPropagation();
 });
+reset.onclick=e=>{
+  planets.length=0;blackholes.length=0;particles.length=0;
+  mode=null;document.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+  initStars();e.stopPropagation();
+};
+grav.oninput=e=>G=+e.target.value;
 
-// RESET
-document.getElementById("reset").addEventListener("click", e => {
-  planets.length = 0;
-  blackholes.length = 0;
-  mode = null;
-  document.querySelectorAll("button").forEach(x => x.classList.remove("active"));
-  initStars(); // Återskapa stjärnor
-  e.stopPropagation();
-});
+// Klick
+c.onclick=e=>{
+  if(e.clientX<220&&e.clientY<150)return;
+  if(mode==="planet")planets.push(new Planet(e.clientX,e.clientY));
+  if(mode==="blackhole")blackholes.push(new BlackHole(e.clientX,e.clientY));
+};
 
-// Gravitation-slider
-document.getElementById("gravSlider").addEventListener("input", e => {
-  G = parseFloat(e.target.value);
-});
-
-// CANVAS-KLICK
-c.addEventListener("click", e => {
-  // ignorera UI-området
-  if(e.clientX < 220 && e.clientY < 150) return;
-
-  if(mode === "planet") planets.push(new Planet(e.clientX, e.clientY));
-  if(mode === "blackhole") blackholes.push(new BlackHole(e.clientX, e.clientY));
-});
-
-// RESIZE
-addEventListener("resize",()=>{
-  c.width=innerWidth;
-  c.height=innerHeight;
-});
-
-// LOOP
+// Loop
 function loop(){
-  ctx.fillStyle="rgba(0,0,0,0.3)";
+  ctx.save();
+  if(shake){ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);shake--}
+  ctx.fillStyle="rgba(0,0,0,.3)";
   ctx.fillRect(0,0,c.width,c.height);
 
-  stars.forEach(s=>{
-    blackholes.forEach(bh=>s.pullFrom(bh));
-    s.update();
-    s.draw();
-  });
-
-  planets.forEach(p=>{
-    p.update();
-    p.draw();
-  });
-
-  rockets.forEach(r=>{
-    r.update();
-    r.draw();
-  });
-
-  blackholes.forEach(bh=>bh.draw());
+  stars.forEach(s=>{blackholes.forEach(b=>s.pullFrom(b));s.update();s.draw()});
+  planets.forEach(p=>{p.update();p.draw()});
+  rockets.forEach(r=>{r.update();r.draw()});
+  blackholes.forEach(b=>b.draw());
+  particles.forEach((p,i)=>{p.update();p.draw();if(p.life<=0)particles.splice(i,1)});
+  ctx.restore();
 
   requestAnimationFrame(loop);
 }
 loop();
 </script>
-
 </body>
 </html>
