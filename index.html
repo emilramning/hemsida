@@ -1,160 +1,222 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pawnder 🐾 Deluxe</title>
+<title>Space Sandbox Simulator</title>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #fef6e4;
-    margin: 0;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  h1 { color: #ff6f61; }
-  .section { width: 90%; max-width: 500px; margin-bottom: 30px; }
-  input, textarea, select, button { width: 100%; padding: 10px; margin-top: 5px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-  button { background: #ff6f61; color: white; border: none; cursor: pointer; }
-  button:hover { background: #ff4f41; }
-
-  #swipeCards { position: relative; width: 100%; height: 400px; }
-  .card { position: absolute; width: 100%; height: 100%; border-radius: 10px; overflow: hidden; background: white; border: 2px solid #ff6f61; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: transform 0.3s ease, opacity 0.3s ease; }
-  .card img { width: 100%; height: 60%; object-fit: cover; }
-  .card h3 { margin: 10px 0 5px; color: #ff6f61; }
-  .card p { padding: 0 10px; text-align: center; }
-
-  #chatSection { display: none; }
-  #chatBox { height: 300px; overflow-y: auto; border: 2px solid #ff6f61; border-radius: 10px; padding: 10px; background: white; margin-bottom: 10px; }
-  .chatMessage { margin: 5px 0; }
-  .bot { color: #ff6f61; }
-  .user { color: #0074D9; text-align: right; }
+html, body {
+  margin: 0; padding: 0;
+  overflow: hidden;
+  background: black;
+  font-family: sans-serif;
+  color: white;
+}
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.5);
+  padding: 10px;
+  border-radius: 10px;
+  z-index: 10;
+}
+button, input[type=range], select {
+  margin: 5px 0;
+  cursor: pointer;
+}
+button.active {
+  background: #1b3558;
+  color: white;
+}
 </style>
 </head>
 <body>
 
-<h1>Pawnder 🐾 Deluxe</h1>
+<canvas id="c"></canvas>
 
-<div class="section" id="createProfileSection">
-  <h2>Create Your Dog Profile</h2>
-  <input type="text" id="dogName" placeholder="Dog's Name">
-  <textarea id="dogDescription" placeholder="Describe your dog..."></textarea>
-  <select id="dogImage"></select>
-  <button id="createProfileBtn">Create Profile</button>
-</div>
-
-<div class="section" id="swipeSection" style="display:none;">
-  <h2>Swipe Dogs 🐶</h2>
-  <div id="swipeCards"></div>
-  <button id="chatBtn">Chat With This Dog</button>
-</div>
-
-<div class="section" id="chatSection">
-  <h2>Chat</h2>
-  <div id="chatBox"></div>
-  <input type="text" id="chatInput" placeholder="Type a message...">
-  <button id="sendBtn">Send</button>
-  <button id="backBtn">Back to Swiping</button>
+<div id="ui">
+  <button data-type="planet">Planet</button>
+  <button data-type="blackhole">Black Hole</button>
+  <button data-type="miniBH">Mini BH</button>
+  <button data-type="repulsor">Repulsor</button>
+  <button data-type="explosion">Explosion Pad</button>
+  <button data-type="trail">Trail Painter</button>
+  <button id="reset">Reset</button><br>
+  Gravitation: <input type="range" min="0" max="1" step="0.01" id="gravSlider" value="0.25"><br>
+  Planet-typ: 
+  <select id="planetType">
+    <option value="normal">Normal</option>
+    <option value="lava">Lava</option>
+    <option value="gas">Gas</option>
+    <option value="ice">Ice</option>
+  </select>
 </div>
 
 <script>
-  // ----- User Profile -----
-  let userProfile = {};
-  const dogImages = [];
-  for(let i=1;i<=20;i++) dogImages.push(`https://placedog.net/400/300?id=${i}`);
+const c = document.getElementById("c");
+const ctx = c.getContext("2d");
+c.width = innerWidth;
+c.height = innerHeight;
 
-  const dogImageSelect = document.getElementById('dogImage');
-  dogImages.forEach((img, i) => {
-    const option = document.createElement('option');
-    option.value = img;
-    option.textContent = `Dog ${i+1}`;
-    dogImageSelect.appendChild(option);
-  });
+let mode = null;
+let G = parseFloat(document.getElementById("gravSlider").value);
+let shake = 0;
 
-  document.getElementById('createProfileBtn').addEventListener('click', () => {
-    const name = document.getElementById('dogName').value;
-    const desc = document.getElementById('dogDescription').value;
-    const img = document.getElementById('dogImage').value;
-    if (!name || !desc) { alert('Please fill all fields!'); return; }
-    userProfile = { name, desc, img };
-    document.getElementById('createProfileSection').style.display = 'none';
-    document.getElementById('swipeSection').style.display = 'block';
-    generateSwipeCards();
-  });
+const stars = [];
+const planets = [];
+const blackholes = [];
+const rockets = [];
+const particles = [];
+const meteors = [];
+const miniBHs = [];
+const repulsors = [];
+const explosionPads = [];
+const trailPainters = [];
 
-  // ----- Bot Dogs -----
-  const botDogs = [];
-  for(let i=0;i<15;i++){
-    botDogs.push({
-      name: `Doggo ${i+1}`,
-      desc: ['Loves belly rubs','Chases squirrels','Enjoys naps','Barks at the mailman','Eats snacks constantly'][Math.floor(Math.random()*5)],
-      img: dogImages[Math.floor(Math.random()*dogImages.length)],
-      messages: ['Woof!','Bark bark!','Sniff sniff','Wanna play?','I love treats!']
+ctx.imageSmoothingEnabled = true;
+
+// ===== BAS-KLASS =====
+class Body {
+  constructor(x, y, mass){
+    this.x=x; this.y=y;
+    this.vx=0; this.vy=0;
+    this.mass=mass;
+  }
+  pullFrom(bh){
+    const dx=bh.x-this.x;
+    const dy=bh.y-this.y;
+    const d=Math.sqrt(dx*dx+dy*dy)+0.5;
+    const f=G*bh.mass/(d*d);
+    this.vx += dx/d*f;
+    this.vy += dy/d*f;
+  }
+  update(){ this.x+=this.vx; this.y+=this.vy; }
+}
+
+// ===== STAR =====
+class Star extends Body {
+  constructor(){ super(Math.random()*c.width, Math.random()*c.height,1); this.size=Math.random()*1.5+0.5; this.color=["#fff","#ffea00","#9fdfff"][Math.floor(Math.random()*3)]; }
+  draw(){ ctx.fillStyle=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); }
+}
+
+// ===== PARTICLE =====
+class Particle{
+  constructor(x,y,color){ this.x=x; this.y=y; this.vx=(Math.random()-0.5)*4; this.vy=(Math.random()-0.5)*4; this.life=30; this.color=color; }
+  update(){ this.x+=this.vx; this.y+=this.vy; this.life--; }
+  draw(){ ctx.fillStyle=this.color; ctx.globalAlpha=this.life/30; ctx.fillRect(this.x,this.y,2,2); ctx.globalAlpha=1; }
+}
+
+// ===== PLANET =====
+class Planet extends Body{
+  constructor(x,y,type="normal"){ super(x,y,600); this.type=type; this.r=10+Math.random()*20; this.trail=[]; this.angle=Math.random()*Math.PI*2;
+    const colorMap={ normal:[["#7fd4ff","#1b3558"]], lava:[["#ff4d4d","#7f0000"]], gas:[["#a0ffa0","#0b3d0b"]], ice:[["#99ccff","#003366"]] };
+    this.col=colorMap[type][0];
+  }
+  update(){
+    blackholes.forEach(bh=>this.pullFrom(bh));
+    miniBHs.forEach(bh=>this.pullFrom({x:bh.x,y:bh.y,mass:bh.mass}));
+    repulsors.forEach(r=>{
+      const dx=r.x-this.x; const dy=r.y-this.y; const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<r.r){ this.vx -= dx/d*0.5; this.vy -= dy/d*0.5; }
     });
-  }
-
-  // ----- Swipe Cards -----
-  const swipeCards = document.getElementById('swipeCards');
-  let currentCardIndex = 0;
-
-  function generateSwipeCards() {
-    swipeCards.innerHTML = '';
-    botDogs.forEach((dog, index) => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `<img src="${dog.img}"><h3>${dog.name}</h3><p>${dog.desc}</p>`;
-      card.style.zIndex = botDogs.length - index;
-      swipeCards.appendChild(card);
+    super.update();
+    this.trail.push({x:this.x,y:this.y}); if(this.trail.length>20) this.trail.shift();
+    blackholes.forEach(bh=>{
+      const dx = bh.x-this.x; const dy=bh.y-this.y;
+      if(Math.sqrt(dx*dx+dy*dy)<bh.r){ for(let i=0;i<40;i++) particles.push(new Particle(this.x,this.y,this.col[0])); shake=10; planets.splice(planets.indexOf(this),1); }
     });
+    explosionPads.forEach(p=>{
+      const dx=p.x-this.x; const dy=p.y-this.y; const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<p.r){ this.vx+=dx/d*5; this.vy+=dy/d*5; }
+    });
+    trailPainters.forEach(tp=>{ if(Math.random()<0.02) particles.push(new Particle(this.x,this.y,tp.color)); });
   }
-
-  function swipeCard() {
-    const cards = document.querySelectorAll('.card');
-    if(currentCardIndex >= cards.length) currentCardIndex = 0;
-    const card = cards[currentCardIndex];
-    card.style.transform = 'translateX(500px) rotate(20deg)';
-    card.style.opacity = '0';
-    currentCardIndex++;
+  draw(){
+    ctx.strokeStyle="rgba(127,212,255,0.4)"; ctx.beginPath(); this.trail.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+    const g = ctx.createRadialGradient(this.x+Math.cos(this.angle)*2,this.y+Math.sin(this.angle)*2,this.r*0.2,this.x,this.y,this.r); g.addColorStop(0,this.col[0]); g.addColorStop(1,this.col[1]); ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=this.col[0]; ctx.globalAlpha=0.2; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(this.x,this.y,this.r+4,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1;
   }
+}
 
-  swipeCards.addEventListener('click', swipeCard);
+// ===== BLACK HOLE =====
+class BlackHole{ constructor(x,y){ this.x=x; this.y=y; this.mass=3000; this.r=35; this.t=0; } draw(){
+  this.t+=0.05; ctx.fillStyle="black"; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=`rgba(255,255,255,${0.25+Math.sin(this.t)*0.2})`; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(this.x,this.y,this.r+10+Math.sin(this.t)*4,0,Math.PI*2); ctx.stroke();
+  particles.forEach(p=>{ const dx=this.x-p.x; const dy=this.y-p.y; const dist=Math.sqrt(dx*dx+dy*dy); if(dist<50){ p.vx+=dx/dist*0.1; p.vy+=dy/dist*0.1; } });
+}}
 
-  // ----- Chat -----
-  let activeBot = null;
-  const chatBox = document.getElementById('chatBox');
+// ===== MINI BLACK HOLE =====
+class MiniBH{ constructor(x,y){ this.x=x; this.y=y; this.mass=2000; this.r=20; } draw(){ ctx.fillStyle="#222"; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#555"; ctx.lineWidth=2; ctx.stroke(); }}
 
-  document.getElementById('chatBtn').addEventListener('click', () => {
-    const cards = document.querySelectorAll('.card');
-    activeBot = botDogs[currentCardIndex-1 >=0 ? currentCardIndex-1:0];
-    document.getElementById('swipeSection').style.display = 'none';
-    document.getElementById('chatSection').style.display = 'block';
-    chatBox.innerHTML = `<div class="chatMessage bot">${activeBot.name}: Hi ${userProfile.name}! 🐶</div>`;
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
+// ===== REPULSOR =====
+class Repulsor{ constructor(x,y){ this.x=x; this.y=y; this.r=30; this.color="#0ff"; } draw(){ ctx.strokeStyle=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.stroke(); }}
 
-  document.getElementById('sendBtn').addEventListener('click', sendMessage);
-  document.getElementById('chatInput').addEventListener('keydown', (e)=>{if(e.key==='Enter') sendMessage();});
+// ===== EXPLOSION PAD =====
+class ExplosionPad{ constructor(x,y){ this.x=x; this.y=y; this.r=25; this.color="#ff0"; } draw(){ ctx.strokeStyle=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.stroke(); }}
 
-  function sendMessage() {
-    const input = document.getElementById('chatInput');
-    const msg = input.value.trim();
-    if(!msg) return;
-    chatBox.innerHTML += `<div class="chatMessage user">${userProfile.name}: ${msg}</div>`;
-    input.value='';
-    chatBox.scrollTop = chatBox.scrollHeight;
-    setTimeout(() => {
-      const botMsg = activeBot.messages[Math.floor(Math.random()*activeBot.messages.length)];
-      chatBox.innerHTML += `<div class="chatMessage bot">${activeBot.name}: ${botMsg}</div>`;
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }, 1000);
-  }
+// ===== TRAIL PAINTER =====
+class TrailPainter{ constructor(x,y){ this.x=x; this.y=y; this.color=["#f0f","#0ff","#ff0","#0f0"][Math.floor(Math.random()*4)]; } draw(){ ctx.fillStyle=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,5,0,Math.PI*2); ctx.fill(); }}
 
-  document.getElementById('backBtn').addEventListener('click', ()=>{
-    document.getElementById('chatSection').style.display='none';
-    document.getElementById('swipeSection').style.display='block';
-  });
+// ===== ROCKET =====
+class Rocket extends Body{ constructor(){ super(-100,Math.random()*c.height,200); this.vx=2; this.trail=[]; } update(){ blackholes.forEach(bh=>this.pullFrom(bh)); miniBHs.forEach(bh=>this.pullFrom({x:bh.x,y:bh.y,mass:bh.mass})); super.update();
+  this.trail.push({x:this.x,y:this.y}); if(this.trail.length>15) this.trail.shift(); particles.push(new Particle(this.x-10,this.y+3,"orange"));
+  if(this.x>c.width+200){ this.x=-200; this.y=Math.random()*c.height; this.vx=2; this.vy=0; this.trail=[]; } }
+  draw(){ ctx.strokeStyle="orange"; ctx.beginPath(); this.trail.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.fillStyle="white"; ctx.fillRect(this.x,this.y,30,6); }
+}
+
+// ===== INIT STJÄRNOR =====
+function initStars(){ stars.length=0; for(let i=0;i<1000;i++) stars.push(new Star()); }
+initStars(); rockets.push(new Rocket());
+
+// ===== MENU =====
+document.querySelectorAll("button[data-type]").forEach(b=>{
+  b.onclick=e=>{ document.querySelectorAll("button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); mode=b.dataset.type; e.stopPropagation(); };
+});
+
+document.getElementById("reset").onclick=e=>{
+  planets.length=0; blackholes.length=0; miniBHs.length=0; repulsors.length=0; explosionPads.length=0; trailPainters.length=0; particles.length=0; mode=null;
+  document.querySelectorAll("button").forEach(x=>x.classList.remove("active"));
+  initStars(); e.stopPropagation();
+};
+
+document.getElementById("gravSlider").oninput=e=>G=parseFloat(e.target.value);
+
+c.onclick=e=>{
+  if(e.clientX<220 && e.clientY<150) return;
+  const typeSelect = document.getElementById("planetType"); const pType = typeSelect.value;
+  if(mode==="planet") planets.push(new Planet(e.clientX,e.clientY,pType));
+  if(mode==="blackhole") blackholes.push(new BlackHole(e.clientX,e.clientY));
+  if(mode==="miniBH") miniBHs.push(new MiniBH(e.clientX,e.clientY));
+  if(mode==="repulsor") repulsors.push(new Repulsor(e.clientX,e.clientY));
+  if(mode==="explosion") explosionPads.push(new ExplosionPad(e.clientX,e.clientY));
+  if(mode==="trail") trailPainters.push(new TrailPainter(e.clientX,e.clientY));
+};
+
+// ===== LOOP =====
+function loop(){
+  ctx.save();
+  if(shake){ ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake); shake--; }
+
+  ctx.fillStyle="rgba(0,0,0,0.3)"; ctx.fillRect(0,0,c.width,c.height);
+  stars.forEach(s=>{ blackholes.forEach(bh=>s.pullFrom(bh)); miniBHs.forEach(bh=>s.pullFrom({x:bh.x,y:bh.y,mass:bh.mass})); s.update(); s.draw(); });
+  meteors.forEach(m=>{ m.update(); m.draw(); });
+  planets.forEach(p=>{ p.update(); p.draw(); });
+  rockets.forEach(r=>{ r.update(); r.draw(); });
+  blackholes.forEach(b=>b.draw());
+  miniBHs.forEach(b=>b.draw());
+  repulsors.forEach(r=>r.draw());
+  explosionPads.forEach(p=>p.draw());
+  trailPainters.forEach(tp=>tp.draw());
+  particles.forEach((p,i)=>{ p.update(); p.draw(); if(p.life<=0) particles.splice(i,1); });
+
+  ctx.restore();
+  requestAnimationFrame(loop);
+}
+
+// ===== RESIZE =====
+window.addEventListener("resize",()=>{ c.width=innerWidth; c.height=innerHeight; });
 
 </script>
 </body>
