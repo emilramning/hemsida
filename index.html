@@ -7,13 +7,9 @@
 
 <style>
 :root{
---bg:#0b0f14;
---panel:#111827;
---border:#1f2937;
---text:#e5e7eb;
---muted:#9ca3af;
---green:#22c55e;
---red:#ef4444;
+--bg:#0b0f14;--panel:#111827;--border:#1f2937;
+--text:#e5e7eb;--muted:#9ca3af;
+--green:#22c55e;--red:#ef4444;
 }
 
 *{box-sizing:border-box;font-family:system-ui,sans-serif}
@@ -23,10 +19,6 @@ header{
 display:flex;justify-content:space-between;align-items:center;
 padding:20px 30px;border-bottom:1px solid var(--border)
 }
-
-h1{margin:0;font-size:20px}
-
-.stats span{margin-left:20px;font-weight:600}
 
 main{padding:30px;max-width:1200px;margin:auto}
 
@@ -46,30 +38,21 @@ align-items:center
 }
 
 .market-header{
-background:#0f172a;
-font-size:13px;
-color:var(--muted);
+background:#0f172a;font-size:13px;color:var(--muted);
 text-transform:uppercase
 }
 
-.row{border-top:1px solid var(--border)}
+.row{border-top:1px solid var(--border);cursor:pointer}
 .row:hover{background:#020617}
 
 input{
-width:60px;
-background:#020617;
-border:1px solid var(--border);
-color:white;
-padding:5px;
-border-radius:5px
+width:60px;background:#020617;border:1px solid var(--border);
+color:white;padding:5px;border-radius:5px
 }
 
 button{
-padding:6px 10px;
-border:none;
-border-radius:6px;
-cursor:pointer;
-font-weight:600
+padding:6px 10px;border:none;border-radius:6px;
+cursor:pointer;font-weight:600
 }
 
 .buy{background:var(--green);color:black}
@@ -78,6 +61,32 @@ font-weight:600
 .green{color:var(--green)}
 .red{color:var(--red)}
 
+.stats span{margin-left:20px;font-weight:600}
+
+/* MODAL */
+.modal{
+position:fixed;inset:0;
+background:rgba(0,0,0,0.7);
+display:none;align-items:center;justify-content:center
+}
+
+.modal-content{
+background:var(--panel);
+border:1px solid var(--border);
+border-radius:12px;
+width:700px;
+padding:20px
+}
+
+.modal-header{
+display:flex;justify-content:space-between;align-items:center
+}
+
+.close{
+cursor:pointer;color:var(--muted)
+}
+
+canvas{width:100%;height:300px;margin-top:20px}
 </style>
 </head>
 
@@ -96,135 +105,142 @@ font-weight:600
 
 <div class="market">
 <div class="market-header">
-<div>Company</div>
-<div>Price</div>
-<div>Change</div>
-<div>Shares</div>
-<div>Buy</div>
-<div>Sell</div>
+<div>Company</div><div>Price</div><div>Change</div>
+<div>Shares</div><div>Buy</div><div>Sell</div>
 </div>
 <div id="stocks"></div>
 </div>
 
 <div class="portfolio">
 <div class="market-header">
-<div>Your Holdings</div>
-<div>Shares</div>
-<div>Avg Price</div>
-<div>Current</div>
-<div>Value</div>
-<div>P/L</div>
+<div>Holding</div><div>Shares</div><div>Avg</div>
+<div>Current</div><div>Value</div><div>P/L</div>
 </div>
 <div id="portfolio"></div>
 </div>
 
 </main>
 
-<script>
-let cash = parseFloat(localStorage.getItem("cash")) || 100000;
-let portfolio = JSON.parse(localStorage.getItem("portfolio")) || {};
+<!-- MODAL -->
+<div class="modal" id="modal">
+<div class="modal-content">
+<div class="modal-header">
+<h3 id="modalTitle"></h3>
+<span class="close" onclick="closeModal()">✕</span>
+</div>
+<canvas id="chart"></canvas>
+</div>
+</div>
 
-let stocks = [
-{ticker:"NXAI",name:"Nexora AI",price:142},
-{ticker:"BLKW",name:"Blackwave Industries",price:87},
-{ticker:"VRTX",name:"Vertex Dynamics",price:59},
-{ticker:"OMNI",name:"OmniCore Systems",price:212},
-{ticker:"CYBR",name:"Cyberion Security",price:134},
-{ticker:"AETH",name:"Aether Energy",price:73}
+<script>
+let cash=100000;
+let portfolio={};
+
+let stocks=[
+{ticker:"NXAI",name:"Nexora AI",price:142,history:[]},
+{ticker:"BLKW",name:"Blackwave Industries",price:87,history:[]},
+{ticker:"VRTX",name:"Vertex Dynamics",price:59,history:[]},
+{ticker:"OMNI",name:"OmniCore Systems",price:212,history:[]},
+{ticker:"CYBR",name:"Cyberion Security",price:134,history:[]},
+{ticker:"AETH",name:"Aether Energy",price:73,history:[]}
 ];
 
+const ctx=document.getElementById("chart").getContext("2d");
+
 function renderStocks(){
-const container=document.getElementById("stocks");
-container.innerHTML="";
+const s=document.getElementById("stocks");
+s.innerHTML="";
 stocks.forEach(stock=>{
-let change=(Math.random()*4-2).toFixed(2);
-stock.price=(stock.price*(1+change/100));
-container.innerHTML+=`
-<div class="row">
+let change=(Math.random()*4-2);
+stock.price*=1+change/100;
+stock.history.push(stock.price);
+if(stock.history.length>50)stock.history.shift();
+
+s.innerHTML+=`
+<div class="row" onclick="openModal('${stock.ticker}')">
 <div>${stock.ticker} <span style="color:gray;font-size:12px">${stock.name}</span></div>
 <div>$${stock.price.toFixed(2)}</div>
-<div class="${change>=0?'green':'red'}">${change}%</div>
+<div class="${change>=0?'green':'red'}">${change.toFixed(2)}%</div>
 <div><input type="number" min="1" value="1" id="qty-${stock.ticker}"></div>
-<div><button class="buy" onclick="buy('${stock.ticker}')">Buy</button></div>
-<div><button class="sell" onclick="sell('${stock.ticker}')">Sell</button></div>
-</div>
-`;
+<div><button class="buy" onclick="event.stopPropagation();buy('${stock.ticker}')">Buy</button></div>
+<div><button class="sell" onclick="event.stopPropagation();sell('${stock.ticker}')">Sell</button></div>
+</div>`;
 });
 }
 
-function buy(ticker){
-let stock=stocks.find(s=>s.ticker===ticker);
-let qty=parseInt(document.getElementById("qty-"+ticker).value);
-let cost=stock.price*qty;
+function buy(t){
+let s=stocks.find(x=>x.ticker===t);
+let q=+document.getElementById("qty-"+t).value;
+let cost=s.price*q;
 if(cost>cash)return alert("Not enough cash");
-
 cash-=cost;
-if(!portfolio[ticker]){
-portfolio[ticker]={shares:0,totalCost:0};
-}
-portfolio[ticker].shares+=qty;
-portfolio[ticker].totalCost+=cost;
-
-save();
+portfolio[t]=portfolio[t]||{shares:0,cost:0};
+portfolio[t].shares+=q;
+portfolio[t].cost+=cost;
 updateUI();
 }
 
-function sell(ticker){
-if(!portfolio[ticker])return;
-let stock=stocks.find(s=>s.ticker===ticker);
-let qty=parseInt(document.getElementById("qty-"+ticker).value);
-if(qty>portfolio[ticker].shares)return alert("Not enough shares");
-
-let revenue=stock.price*qty;
-cash+=revenue;
-portfolio[ticker].shares-=qty;
-portfolio[ticker].totalCost-=portfolio[ticker].totalCost*(qty/(portfolio[ticker].shares+qty));
-
-if(portfolio[ticker].shares===0)delete portfolio[ticker];
-
-save();
+function sell(t){
+if(!portfolio[t])return;
+let s=stocks.find(x=>x.ticker===t);
+let q=+document.getElementById("qty-"+t).value;
+if(q>portfolio[t].shares)return alert("Not enough shares");
+cash+=s.price*q;
+portfolio[t].shares-=q;
+portfolio[t].cost*=portfolio[t].shares/(portfolio[t].shares+q);
+if(portfolio[t].shares===0)delete portfolio[t];
 updateUI();
 }
 
 function updateUI(){
 document.getElementById("cash").innerText=cash.toFixed(2);
-
-let portDiv=document.getElementById("portfolio");
-portDiv.innerHTML="";
-let totalValue=0;
-let totalCost=0;
-
-for(let ticker in portfolio){
-let stock=stocks.find(s=>s.ticker===ticker);
-let shares=portfolio[ticker].shares;
-let avg=portfolio[ticker].totalCost/shares;
-let value=stock.price*shares;
-let pl=value-portfolio[ticker].totalCost;
-
-totalValue+=value;
-totalCost+=portfolio[ticker].totalCost;
-
-portDiv.innerHTML+=`
+let p=document.getElementById("portfolio");
+p.innerHTML="";
+let total=0,cost=0;
+for(let t in portfolio){
+let s=stocks.find(x=>x.ticker===t);
+let v=s.price*portfolio[t].shares;
+let pl=v-portfolio[t].cost;
+total+=v;cost+=portfolio[t].cost;
+p.innerHTML+=`
 <div class="row">
-<div>${ticker}</div>
-<div>${shares}</div>
-<div>$${avg.toFixed(2)}</div>
-<div>$${stock.price.toFixed(2)}</div>
-<div>$${value.toFixed(2)}</div>
+<div>${t}</div>
+<div>${portfolio[t].shares}</div>
+<div>$${(portfolio[t].cost/portfolio[t].shares).toFixed(2)}</div>
+<div>$${s.price.toFixed(2)}</div>
+<div>$${v.toFixed(2)}</div>
 <div class="${pl>=0?'green':'red'}">$${pl.toFixed(2)}</div>
-</div>
-`;
+</div>`;
 }
-
-document.getElementById("value").innerText=totalValue.toFixed(2);
-let totalPL=totalValue-totalCost;
+document.getElementById("value").innerText=total.toFixed(2);
+let pl=total-cost;
 document.getElementById("pl").innerHTML=
-`<span class="${totalPL>=0?'green':'red'}">$${totalPL.toFixed(2)}</span>`;
+`<span class="${pl>=0?'green':'red'}">$${pl.toFixed(2)}</span>`;
 }
 
-function save(){
-localStorage.setItem("cash",cash);
-localStorage.setItem("portfolio",JSON.stringify(portfolio));
+function openModal(t){
+let s=stocks.find(x=>x.ticker===t);
+document.getElementById("modalTitle").innerText=
+`${s.ticker} — ${s.name}`;
+document.getElementById("modal").style.display="flex";
+drawChart(s.history);
+}
+
+function closeModal(){
+document.getElementById("modal").style.display="none";
+}
+
+function drawChart(data){
+ctx.clearRect(0,0,700,300);
+ctx.strokeStyle="#22c55e";
+ctx.beginPath();
+data.forEach((p,i)=>{
+let x=i*(700/data.length);
+let y=300-(p/Math.max(...data))*260-20;
+if(i===0)ctx.moveTo(x,y);
+else ctx.lineTo(x,y);
+});
+ctx.stroke();
 }
 
 setInterval(()=>{
