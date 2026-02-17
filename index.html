@@ -1,183 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dark Market</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dark Market</title>
 
-  <style>
-    :root {
-      --bg: #0b0f14;
-      --panel: #111827;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --green: #22c55e;
-      --red: #ef4444;
-      --border: #1f2937;
-    }
+<style>
+:root {
+  --bg:#0b0f14; --panel:#111827; --text:#e5e7eb;
+  --muted:#9ca3af; --green:#22c55e; --red:#ef4444; --border:#1f2937;
+}
+*{box-sizing:border-box;font-family:system-ui,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text)}
 
-    * {
-      box-sizing: border-box;
-      font-family: "Segoe UI", system-ui, sans-serif;
-    }
+header{
+  padding:20px 30px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center
+}
 
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-    }
+.balance{
+  font-weight:600;color:var(--green)
+}
 
-    header {
-      padding: 20px 30px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+main{padding:30px}
 
-    header h1 {
-      font-size: 20px;
-      letter-spacing: 1px;
-    }
+.market{
+  max-width:1100px;margin:auto;background:var(--panel);
+  border:1px solid var(--border);border-radius:10px;overflow:hidden
+}
 
-    header span {
-      color: var(--muted);
-      font-size: 14px;
-    }
+.market-header,.row{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr 1fr 1fr;
+  padding:14px 20px;align-items:center
+}
 
-    main {
-      padding: 30px;
-    }
+.market-header{
+  background:#0f172a;font-size:13px;color:var(--muted);
+  text-transform:uppercase
+}
 
-    .market {
-      max-width: 1000px;
-      margin: auto;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-    }
+.row{border-top:1px solid var(--border)}
+.row:hover{background:#020617}
 
-    .market-header, .row {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
-      padding: 14px 20px;
-      align-items: center;
-    }
+.ticker{font-weight:600}
+.name{font-size:13px;color:var(--muted)}
 
-    .market-header {
-      background: #0f172a;
-      font-size: 13px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
+.green{color:var(--green)}
+.red{color:var(--red)}
 
-    .row {
-      border-top: 1px solid var(--border);
-      transition: background 0.2s;
-    }
+button{
+  background:#020617;color:var(--text);
+  border:1px solid var(--border);
+  padding:6px 10px;border-radius:6px;
+  cursor:pointer
+}
+button:hover{background:#02061799}
 
-    .row:hover {
-      background: #020617;
-    }
-
-    .company {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .ticker {
-      font-weight: 600;
-    }
-
-    .name {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .price {
-      font-weight: 600;
-    }
-
-    .green {
-      color: var(--green);
-    }
-
-    .red {
-      color: var(--red);
-    }
-
-    footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-  </style>
+.portfolio{
+  max-width:1100px;margin:30px auto 0;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;padding:20px
+}
+</style>
 </head>
 
 <body>
 
 <header>
   <h1>DARK MARKET</h1>
-  <span>Paper Trading • Fake Money • Real Feel</span>
+  <div class="balance">Cash: $<span id="cash">100000</span></div>
 </header>
 
 <main>
-  <div class="market">
-    <div class="market-header">
-      <div>Company</div>
-      <div>Price</div>
-      <div>Change</div>
-      <div>Market Cap</div>
-    </div>
 
-    <div class="row">
-      <div class="company">
-        <div class="ticker">NXAI</div>
-        <div class="name">Nexora Artificial Intelligence</div>
-      </div>
-      <div class="price">$142.35</div>
-      <div class="green">+2.41%</div>
-      <div>$1.2T</div>
-    </div>
-
-    <div class="row">
-      <div class="company">
-        <div class="ticker">BLKW</div>
-        <div class="name">Blackwave Industries</div>
-      </div>
-      <div class="price">$87.12</div>
-      <div class="red">-1.08%</div>
-      <div>$340B</div>
-    </div>
-
-    <div class="row">
-      <div class="company">
-        <div class="ticker">VRTX</div>
-        <div class="name">Vertex Dynamics</div>
-      </div>
-      <div class="price">$59.44</div>
-      <div class="green">+4.92%</div>
-      <div>$98B</div>
-    </div>
-
-    <div class="row">
-      <div class="company">
-        <div class="ticker">OMNI</div>
-        <div class="name">OmniCore Systems</div>
-      </div>
-      <div class="price">$212.09</div>
-      <div class="red">-0.62%</div>
-      <div>$640B</div>
-    </div>
+<div class="market">
+  <div class="market-header">
+    <div>Company</div><div>Price</div><div>Change</div><div>Cap</div><div>Trade</div>
   </div>
+
+  <div class="row">
+    <div>
+      <div class="ticker">NXAI</div>
+      <div class="name">Nexora Artificial Intelligence</div>
+    </div>
+    <div>$<span id="price-NXAI">142.35</span></div>
+    <div class="green">+2.4%</div>
+    <div>$1.2T</div>
+    <div><button onclick="buy('NXAI',142.35)">Buy</button></div>
+  </div>
+
+  <div class="row">
+    <div>
+      <div class="ticker">BLKW</div>
+      <div class="name">Blackwave Industries</div>
+    </div>
+    <div>$<span id="price-BLKW">87.12</span></div>
+    <div class="red">-1.0%</div>
+    <div>$340B</div>
+    <div><button onclick="buy('BLKW',87.12)">Buy</button></div>
+  </div>
+
+</div>
+
+<div class="portfolio">
+  <h3>📊 Portfolio</h3>
+  <div id="portfolio">No investments yet.</div>
+</div>
+
 </main>
 
-<footer>
-  This is a simulated market. No real money involved.
-</footer>
+<script>
+let cash = 100000;
+let portfolio = {};
+
+function buy(ticker, price){
+  if(cash < price){
+    alert("Not enough cash");
+    return;
+  }
+  cash -= price;
+  portfolio[ticker] = (portfolio[ticker] || 0) + 1;
+  updateUI();
+}
+
+function updateUI(){
+  document.getElementById("cash").innerText = cash.toFixed(2);
+  const port = document.getElementById("portfolio");
+  port.innerHTML = "";
+  for(let stock in portfolio){
+    port.innerHTML += `${stock}: ${portfolio[stock]} shares<br>`;
+  }
+}
+</script>
 
 </body>
 </html>
