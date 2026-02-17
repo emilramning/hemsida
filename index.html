@@ -3,70 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NeonTrade</title>
+<title>NeonTrade Pro</title>
 <style>
 :root{
 --bg:#0b0f14;--panel:#111827;--border:#1f2937;
 --text:#e5e7eb;--green:#22c55e;--red:#ef4444;--muted:#9ca3af;
 }
-
 *{box-sizing:border-box;font-family:system-ui,sans-serif}
 body{margin:0;background:var(--bg);color:var(--text)}
-
-header{
-display:flex;justify-content:space-between;padding:20px;border-bottom:1px solid var(--border)
-}
-
+header{display:flex;justify-content:space-between;padding:20px;border-bottom:1px solid var(--border)}
 h2{margin:0}
-
 main{padding:30px;max-width:1200px;margin:auto}
-
-.market,.portfolio{
-background:var(--panel);
-border:1px solid var(--border);
-border-radius:10px;margin-bottom:30px;overflow:hidden;
-}
-
-.market-header,.row{
-display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr 1fr;
-padding:14px;align-items:center;
-}
-
-.market-header{
-background:#0f172a;font-size:13px;color:var(--muted);text-transform:uppercase;
-}
-
+.market,.portfolio{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:30px;overflow:hidden;}
+.market-header,.row{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr 1fr;padding:14px;align-items:center;}
+.market-header{background:#0f172a;font-size:13px;color:var(--muted);text-transform:uppercase;}
 .row{border-top:1px solid var(--border);cursor:pointer}
 .row:hover{background:#020617}
-
-input{width:60px;background:#020617;border:1px solid var(--border);
-color:white;padding:5px;border-radius:5px}
-
+input{width:60px;background:#020617;border:1px solid var(--border);color:white;padding:5px;border-radius:5px}
 button{padding:6px 10px;border:none;border-radius:6px;cursor:pointer;font-weight:600}
 .buy{background:var(--green);color:black}
 .sell{background:var(--red);color:black}
 .green{color:var(--green)}
 .red{color:var(--red)}
-
-/* MODAL */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);
-display:none;align-items:center;justify-content:center;}
-.modal-content{background:var(--panel);border:1px solid var(--border);
-border-radius:12px;width:750px;padding:20px;}
-canvas{width:100%;height:300px;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;}
+.modal-content{background:var(--panel);border:1px solid var(--border);border-radius:12px;width:800px;padding:20px;}
+canvas{width:100%;height:350px;}
 </style>
 </head>
 <body>
-
 <header>
-<h2>NeonTrade</h2>
+<h2>NeonTrade Pro</h2>
 <div>
 Cash: $<span id="cash">100000</span> |
 Portfolio: $<span id="value">0</span> |
 P/L: <span id="pl">$0</span>
 </div>
 </header>
-
 <main>
 <div class="market">
 <div class="market-header">
@@ -75,7 +47,6 @@ P/L: <span id="pl">$0</span>
 </div>
 <div id="stocks"></div>
 </div>
-
 <div class="portfolio">
 <div class="market-header">
 <div>Holding</div><div>Shares</div><div>Avg</div>
@@ -88,30 +59,35 @@ P/L: <span id="pl">$0</span>
 <div class="modal" id="modal">
 <div class="modal-content">
 <h3 id="modalTitle"></h3>
-<canvas id="chart" width="700" height="300"></canvas>
+<canvas id="chart" width="750" height="350"></canvas>
 <br>
 <button onclick="closeModal()">Close</button>
 </div>
 </div>
 
 <script>
-/* ======= HISTORICAL DATA GENERATOR ======= */
-function generateHistory(startPrice, points=80){
-  let history=[];
-  let price=startPrice;
-  for(let i=0;i<points;i++){
-    let change=(Math.random()*6-3); // bigger swings: -3% to +3%
-    price*=1+change/100;
-    history.push(price);
-  }
-  return history;
-}
-
-/* ======= DATA ======= */
 let cash=100000;
 let portfolio={};
 let currentModalStock=null;
 
+/* ======= HISTORIC DATA GENERATOR ======= */
+function generateHistory(startPrice, points=50){
+  let history=[];
+  let price=startPrice;
+  for(let i=0;i<points;i++){
+    let change=(Math.random()*8-4); // -4% to +4%
+    let open=price;
+    let close=price*(1+change/100);
+    let high=Math.max(open,close)*(1+Math.random()*0.02);
+    let low=Math.min(open,close)*(1-Math.random()*0.02);
+    let volume=Math.floor(Math.random()*1000+100);
+    price=close;
+    history.push({open,high,low,close,volume});
+  }
+  return history;
+}
+
+/* ======= STOCK DATA ======= */
 let stocks=[
 {ticker:"NXAI",name:"Nexora AI",price:140,history:generateHistory(140)},
 {ticker:"BLKW",name:"Blackwave Industries",price:90,history:generateHistory(90)},
@@ -128,12 +104,16 @@ const ctx=canvas.getContext("2d");
 function renderStocks(){
   let container=document.getElementById("stocks");
   container.innerHTML="";
-
   stocks.forEach(stock=>{
-    let change=(Math.random()*6-3); // bigger swings
-    stock.price*=1+change/100;
-    stock.history.push(stock.price);
-    if(stock.history.length>120) stock.history.shift();
+    let change=(Math.random()*8-4);
+    let open=stock.price;
+    let close=open*(1+change/100);
+    let high=Math.max(open,close)*(1+Math.random()*0.02);
+    let low=Math.min(open,close)*(1-Math.random()*0.02);
+    let volume=Math.floor(Math.random()*1000+100);
+    stock.history.push({open,high,low,close,volume});
+    stock.price=close;
+    if(stock.history.length>50) stock.history.shift();
 
     container.innerHTML+=`
     <div class="row" data-ticker="${stock.ticker}">
@@ -146,7 +126,6 @@ function renderStocks(){
     </div>`;
   });
 
-  // attach click listeners for rows (but ignore buttons/input)
   document.querySelectorAll("#stocks .row").forEach(row=>{
     row.addEventListener("click", e=>{
       if(e.target.tagName!=="BUTTON" && e.target.tagName!=="INPUT"){
@@ -155,7 +134,6 @@ function renderStocks(){
     });
   });
 
-  // attach buy/sell buttons
   document.querySelectorAll("#stocks .buy").forEach(btn=>{
     btn.addEventListener("click", e=>{
       let ticker=e.target.closest(".row").dataset.ticker;
@@ -180,8 +158,8 @@ function buy(t){
   if(cost>cash) return alert("Not enough cash");
   cash-=cost;
   portfolio[t]=portfolio[t]||{shares:0,cost:0};
+  portfolio[t].cost=(portfolio[t].cost+cost);
   portfolio[t].shares+=q;
-  portfolio[t].cost+=cost;
   updateUI();
 }
 
@@ -190,30 +168,26 @@ function sell(t){
   let s=stocks.find(x=>x.ticker===t);
   let q=parseInt(document.getElementById("qty-"+t).value);
   if(q>portfolio[t].shares) return alert("Not enough shares");
-  cash+=s.price*q;
+
   let avg=portfolio[t].cost/portfolio[t].shares;
+  cash+=s.price*q;
   portfolio[t].shares-=q;
   portfolio[t].cost-=avg*q;
-  if(portfolio[t].shares===0) delete portfolio[t];
+  if(portfolio[t].shares<=0) delete portfolio[t];
   updateUI();
 }
 
 /* ======= PORTFOLIO ======= */
 function updateUI(){
   document.getElementById("cash").innerText=cash.toFixed(2);
-
   let p=document.getElementById("portfolio");
   p.innerHTML="";
-  let total=0;
-  let totalCost=0;
-
+  let total=0,totalCost=0;
   for(let t in portfolio){
     let s=stocks.find(x=>x.ticker===t);
     let value=s.price*portfolio[t].shares;
     let pl=value-portfolio[t].cost;
-    total+=value;
-    totalCost+=portfolio[t].cost;
-
+    total+=value; totalCost+=portfolio[t].cost;
     p.innerHTML+=`
     <div class="row">
       <div>${t}</div>
@@ -224,13 +198,11 @@ function updateUI(){
       <div class="${pl>=0?'green':'red'}">$${pl.toFixed(2)}</div>
     </div>`;
   }
-
   document.getElementById("value").innerText=total.toFixed(2);
   let totalPL=total-totalCost;
   document.getElementById("pl").innerHTML=
     `<span class="${totalPL>=0?'green':'red'}">$${totalPL.toFixed(2)}</span>`;
 
-  // if modal open, update chart
   if(currentModalStock) drawChart(stocks.find(s=>s.ticker===currentModalStock).history);
 }
 
@@ -238,8 +210,7 @@ function updateUI(){
 function openModal(t){
   currentModalStock=t;
   let s=stocks.find(x=>x.ticker===t);
-  document.getElementById("modalTitle").innerText=
-    `${s.ticker} - ${s.name}`;
+  document.getElementById("modalTitle").innerText=`${s.ticker} - ${s.name}`;
   document.getElementById("modal").style.display="flex";
   drawChart(s.history);
 }
@@ -251,19 +222,43 @@ function closeModal(){
 
 function drawChart(data){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  let min=Math.min(...data);
-  let max=Math.max(...data);
+  let padding=20;
+  let candleWidth=canvas.width/data.length;
+
+  let min=Math.min(...data.map(d=>d.low));
+  let max=Math.max(...data.map(d=>d.high));
   let range=max-min;
-  ctx.beginPath();
-  ctx.strokeStyle="#22c55e";
-  ctx.lineWidth=2;
-  data.forEach((price,i)=>{
-    let x=i*(canvas.width/data.length);
-    let y=canvas.height-((price-min)/range)*(canvas.height-40)-20;
-    if(i===0) ctx.moveTo(x,y);
-    else ctx.lineTo(x,y);
+
+  // Draw candles
+  data.forEach((d,i)=>{
+    let x=i*candleWidth;
+    let yOpen=canvas.height-padding-(d.open-min)/range*(canvas.height-2*padding);
+    let yClose=canvas.height-padding-(d.close-min)/range*(canvas.height-2*padding);
+    let yHigh=canvas.height-padding-(d.high-min)/range*(canvas.height-2*padding);
+    let yLow=canvas.height-padding-(d.low-min)/range*(canvas.height-2*padding);
+
+    ctx.strokeStyle=d.close>=d.open?"#22c55e":"#ef4444";
+    ctx.fillStyle=d.close>=d.open?"#22c55e":"#ef4444";
+
+    // Wick
+    ctx.beginPath();
+    ctx.moveTo(x+candleWidth/2,yHigh);
+    ctx.lineTo(x+candleWidth/2,yLow);
+    ctx.stroke();
+
+    // Body
+    let bodyHeight=Math.abs(yClose-yOpen);
+    ctx.fillRect(x+2,Math.min(yOpen,yClose),candleWidth-4,bodyHeight||1);
   });
-  ctx.stroke();
+
+  // Volume bars
+  let maxVol=Math.max(...data.map(d=>d.volume));
+  data.forEach((d,i)=>{
+    let x=i*candleWidth;
+    let h=(d.volume/maxVol)*(padding);
+    ctx.fillStyle="#888";
+    ctx.fillRect(x+2,canvas.height-h,Math.max(2,candleWidth-4),h);
+  });
 }
 
 /* ======= LOOP ======= */
@@ -275,6 +270,5 @@ setInterval(()=>{
 renderStocks();
 updateUI();
 </script>
-
 </body>
 </html>
