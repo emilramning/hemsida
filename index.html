@@ -15,7 +15,7 @@ header{display:flex;justify-content:space-between;padding:20px;border-bottom:1px
 h2{margin:0}
 main{padding:30px;max-width:1200px;margin:auto}
 .market,.portfolio{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:30px;overflow:hidden;}
-.market-header,.row{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr 1fr;padding:14px;align-items:center;}
+.market-header,.row{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr 1fr 1fr;padding:14px;align-items:center;}
 .market-header{background:#0f172a;font-size:13px;color:var(--muted);text-transform:uppercase;}
 .row{border-top:1px solid var(--border);cursor:pointer}
 .row:hover{background:#020617}
@@ -43,14 +43,15 @@ P/L: <span id="pl">$0</span>
 <div class="market">
 <div class="market-header">
 <div>Company</div><div>Price</div><div>Change</div>
-<div>Qty</div><div>Buy</div><div>Sell</div>
+<div>Qty</div><div>Buy</div><div>Sell</div><div>Sell All</div>
 </div>
 <div id="stocks"></div>
 </div>
+
 <div class="portfolio">
 <div class="market-header">
 <div>Holding</div><div>Shares</div><div>Avg</div>
-<div>Current</div><div>Value</div><div>P/L</div>
+<div>Current</div><div>Value</div><div>P/L</div><div>Sell All</div>
 </div>
 <div id="portfolio"></div>
 </div>
@@ -70,14 +71,14 @@ let cash=100000;
 let portfolio={};
 let currentModalStock=null;
 
-/* ======= HISTORIC DATA GENERATOR ======= */
+/* ===== HISTORIC DATA GENERATOR ===== */
 function generateHistory(startPrice, points=50){
   let history=[];
   let price=startPrice;
   for(let i=0;i<points;i++){
     let change=(Math.random()*8-4); // -4% to +4%
     let open=price;
-    let close=price*(1+change/100);
+    let close=open*(1+change/100);
     let high=Math.max(open,close)*(1+Math.random()*0.02);
     let low=Math.min(open,close)*(1-Math.random()*0.02);
     let volume=Math.floor(Math.random()*1000+100);
@@ -87,7 +88,7 @@ function generateHistory(startPrice, points=50){
   return history;
 }
 
-/* ======= STOCK DATA ======= */
+/* ===== STOCK DATA ===== */
 let stocks=[
 {ticker:"NXAI",name:"Nexora AI",price:140,history:generateHistory(140)},
 {ticker:"BLKW",name:"Blackwave Industries",price:90,history:generateHistory(90)},
@@ -100,7 +101,7 @@ let stocks=[
 const canvas=document.getElementById("chart");
 const ctx=canvas.getContext("2d");
 
-/* ======= RENDER STOCKS ======= */
+/* ===== RENDER STOCKS ===== */
 function renderStocks(){
   let container=document.getElementById("stocks");
   container.innerHTML="";
@@ -123,6 +124,7 @@ function renderStocks(){
       <div><input type="number" min="1" value="1" id="qty-${stock.ticker}"></div>
       <div><button class="buy">Buy</button></div>
       <div><button class="sell">Sell</button></div>
+      <div><button class="sellAllMarket">Sell All</button></div>
     </div>`;
   });
 
@@ -134,6 +136,7 @@ function renderStocks(){
     });
   });
 
+  // Buy buttons
   document.querySelectorAll("#stocks .buy").forEach(btn=>{
     btn.addEventListener("click", e=>{
       let ticker=e.target.closest(".row").dataset.ticker;
@@ -141,6 +144,7 @@ function renderStocks(){
       e.stopPropagation();
     });
   });
+  // Sell buttons
   document.querySelectorAll("#stocks .sell").forEach(btn=>{
     btn.addEventListener("click", e=>{
       let ticker=e.target.closest(".row").dataset.ticker;
@@ -148,9 +152,17 @@ function renderStocks(){
       e.stopPropagation();
     });
   });
+  // Sell All in market row
+  document.querySelectorAll("#stocks .sellAllMarket").forEach(btn=>{
+    btn.addEventListener("click", e=>{
+      let ticker=e.target.closest(".row").dataset.ticker;
+      sellAll(ticker);
+      e.stopPropagation();
+    });
+  });
 }
 
-/* ======= BUY/SELL ======= */
+/* ===== BUY/SELL ===== */
 function buy(t){
   let s=stocks.find(x=>x.ticker===t);
   let q=parseInt(document.getElementById("qty-"+t).value);
@@ -158,8 +170,8 @@ function buy(t){
   if(cost>cash) return alert("Not enough cash");
   cash-=cost;
   portfolio[t]=portfolio[t]||{shares:0,cost:0};
-  portfolio[t].cost=(portfolio[t].cost+cost);
-  portfolio[t].shares+=q;
+  portfolio[t].cost += cost;
+  portfolio[t].shares += q;
   updateUI();
 }
 
@@ -168,27 +180,37 @@ function sell(t){
   let s=stocks.find(x=>x.ticker===t);
   let q=parseInt(document.getElementById("qty-"+t).value);
   if(q>portfolio[t].shares) return alert("Not enough shares");
-
   let avg=portfolio[t].cost/portfolio[t].shares;
-  cash+=s.price*q;
-  portfolio[t].shares-=q;
-  portfolio[t].cost-=avg*q;
+  cash += s.price*q;
+  portfolio[t].shares -= q;
+  portfolio[t].cost -= avg*q;
   if(portfolio[t].shares<=0) delete portfolio[t];
   updateUI();
 }
 
-/* ======= PORTFOLIO ======= */
+// Sell all shares from portfolio or market
+function sellAll(t){
+  if(!portfolio[t]) return;
+  let s=stocks.find(x=>x.ticker===t);
+  cash += s.price * portfolio[t].shares;
+  delete portfolio[t];
+  updateUI();
+}
+
+/* ===== UPDATE PORTFOLIO ===== */
 function updateUI(){
-  document.getElementById("cash").innerText=cash.toFixed(2);
+  document.getElementById("cash").innerText = cash.toFixed(2);
   let p=document.getElementById("portfolio");
   p.innerHTML="";
   let total=0,totalCost=0;
+
   for(let t in portfolio){
     let s=stocks.find(x=>x.ticker===t);
-    let value=s.price*portfolio[t].shares;
-    let pl=value-portfolio[t].cost;
-    total+=value; totalCost+=portfolio[t].cost;
-    p.innerHTML+=`
+    let value = s.price*portfolio[t].shares;
+    let pl = value-portfolio[t].cost;
+    total += value; totalCost += portfolio[t].cost;
+
+    p.innerHTML += `
     <div class="row">
       <div>${t}</div>
       <div>${portfolio[t].shares}</div>
@@ -196,21 +218,30 @@ function updateUI(){
       <div>$${s.price.toFixed(2)}</div>
       <div>$${value.toFixed(2)}</div>
       <div class="${pl>=0?'green':'red'}">$${pl.toFixed(2)}</div>
+      <div><button class="sellAll">Sell All</button></div>
     </div>`;
   }
-  document.getElementById("value").innerText=total.toFixed(2);
-  let totalPL=total-totalCost;
-  document.getElementById("pl").innerHTML=
-    `<span class="${totalPL>=0?'green':'red'}">$${totalPL.toFixed(2)}</span>`;
+
+  document.getElementById("value").innerText = total.toFixed(2);
+  let totalPL = total-totalCost;
+  document.getElementById("pl").innerHTML = `<span class="${totalPL>=0?'green':'red'}">$${totalPL.toFixed(2)}</span>`;
+
+  document.querySelectorAll(".sellAll").forEach(btn=>{
+    btn.addEventListener("click", e=>{
+      let t = e.target.closest(".row").children[0].innerText;
+      sellAll(t);
+      e.stopPropagation();
+    });
+  });
 
   if(currentModalStock) drawChart(stocks.find(s=>s.ticker===currentModalStock).history);
 }
 
-/* ======= MODAL & CHART ======= */
+/* ===== MODAL & CHART ===== */
 function openModal(t){
   currentModalStock=t;
   let s=stocks.find(x=>x.ticker===t);
-  document.getElementById("modalTitle").innerText=`${s.ticker} - ${s.name}`;
+  document.getElementById("modalTitle").innerText = `${s.ticker} - ${s.name}`;
   document.getElementById("modal").style.display="flex";
   drawChart(s.history);
 }
@@ -229,7 +260,7 @@ function drawChart(data){
   let max=Math.max(...data.map(d=>d.high));
   let range=max-min;
 
-  // Draw candles
+  // Candles
   data.forEach((d,i)=>{
     let x=i*candleWidth;
     let yOpen=canvas.height-padding-(d.open-min)/range*(canvas.height-2*padding);
@@ -247,8 +278,8 @@ function drawChart(data){
     ctx.stroke();
 
     // Body
-    let bodyHeight=Math.abs(yClose-yOpen);
-    ctx.fillRect(x+2,Math.min(yOpen,yClose),candleWidth-4,bodyHeight||1);
+    let bodyHeight=Math.max(Math.abs(yClose-yOpen),1);
+    ctx.fillRect(x+2,Math.min(yOpen,yClose),candleWidth-4,bodyHeight);
   });
 
   // Volume bars
@@ -261,7 +292,7 @@ function drawChart(data){
   });
 }
 
-/* ======= LOOP ======= */
+/* ===== MAIN LOOP ===== */
 setInterval(()=>{
   renderStocks();
   updateUI();
